@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  summary-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - Groq__ApiKey=${GROQ_API_KEY}
+      - Groq__Model=llama-3.3-70b-versatile
+      - ASPNETCORE_ENVIRONMENT=Production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

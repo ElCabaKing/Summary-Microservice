@@ -1,0 +1,3 @@
+Summarize this portion of a document concisely:
+
+{text}

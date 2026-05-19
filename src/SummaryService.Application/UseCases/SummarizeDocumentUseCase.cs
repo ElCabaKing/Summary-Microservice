@@ -1,7 +1,10 @@
 using System.Text;
+using System.Linq;
 using SummaryService.Application.Interfaces;
 using SummaryService.Domain.Constants;
 using SummaryService.Shared.Models;
+using SummaryService.Application.Validators;
+using SummaryService.Application.Models;
 
 namespace SummaryService.Application.UseCases;
 
@@ -13,8 +16,7 @@ public sealed class SummarizeDocumentUseCase(
     ISseStreamWriter sseWriter)
 {
     public async Task<Result> ExecuteAsync(
-        Stream document,
-        string contentType,
+        SummaryStreamRequest request,
         CancellationToken ct)
     {
         try
@@ -22,8 +24,8 @@ public sealed class SummarizeDocumentUseCase(
             await sseWriter.WriteStatusAsync("extracting_text", ct);
 
             var text = await documentParser.ParseAsync(
-                document,
-                contentType,
+                request.Document,
+                request.ContentType,
                 ct);
 
             if (string.IsNullOrWhiteSpace(text))
@@ -67,29 +69,54 @@ public sealed class SummarizeDocumentUseCase(
                 ct.ThrowIfCancellationRequested();
 
                 var chunk = chunks[i];
+                var chunkNumber = i + 1;
 
                 await sseWriter.WriteStatusAsync(
-                    $"summarizing_chunk_{chunk}",
+                    $"summarizing_chunk_{chunkNumber}_of_{chunks.Count}",
                     ct);
 
                 var chunkPrompt = promptProvider
                     .GetPrompt("summarize-chunk")
                     .Replace("{text}", chunk);
 
+                var aiRequest = new AiRequest
+                {
+                    Provider = request.Provider,
+                    Model = request.Model,
+                    Prompt = chunkPrompt
+                };
+
+
                 var chunkSummaryBuilder = new StringBuilder();
 
                 await foreach (var token in summaryGenerator.SummarizeAsync(
-                                   chunkPrompt,
+                                   aiRequest,
                                    ct))
                 {
-                    chunkSummaryBuilder.Append(token);
-                }
+                    if (string.IsNullOrWhiteSpace(token))
+                        continue;
 
+                    chunkSummaryBuilder.Append(token);
+
+                    // Stream each token as it arrives
+                    await sseWriter.WriteChunkAsync(token, ct);
+                }
                 var chunkSummary = chunkSummaryBuilder.ToString().Trim();
 
                 if (!string.IsNullOrWhiteSpace(chunkSummary))
                 {
                     chunkSummaries.Add(chunkSummary);
+                }
+
+                // Add a separator between chunk summaries
+                if (i < chunks.Count - 1)
+                {
+                    await sseWriter.WriteChunkAsync("\n\n---\n\n", ct);
+
+                    // Rate limiting: Respect Groq's 12,000 TPM limit
+                    // 300 token chunks = ~400-500 tokens per request (input + output)
+                    // 12,000 / 500 = 24 requests/min max, so 60/24 = 2.5s per request
+                    await Task.Delay(3000, ct);
                 }
             }
 
@@ -105,31 +132,15 @@ public sealed class SummarizeDocumentUseCase(
                     "\n\n",
                     chunkSummaries);
 
-                var reducePrompt = promptProvider
-                    .GetPrompt("reduce")
-                    .Replace("{text}", combinedSummaries);
-
-                var finalSummaryBuilder = new StringBuilder();
-
-                await foreach (var token in summaryGenerator.SummarizeAsync(
-                                   reducePrompt,
-                                   ct))
-                {
-                    if (string.IsNullOrWhiteSpace(token))
-                    {
-                        continue;
-                    }
-
-                    finalSummaryBuilder.Append(token);
-
-                    await sseWriter.WriteChunkAsync(
-                        token,
-                        ct);
-                }
-
-                finalSummary = finalSummaryBuilder
-                    .ToString()
-                    .Trim();
+                // Check if combined summaries are too large, apply recursive reduction
+                finalSummary = await ReduceSummariesAsync(
+                      request,
+                        combinedSummaries,
+                        chunkSummaries.Count,
+                        promptProvider,
+                        summaryGenerator,
+                        sseWriter,
+                         ct);
             }
             else
             {
@@ -172,5 +183,134 @@ public sealed class SummarizeDocumentUseCase(
                     "INTERNAL_ERROR",
                     ex.Message));
         }
+    }
+
+    private async Task<string> ReduceSummariesAsync(
+       SummaryStreamRequest request,
+       string combinedSummaries,
+       int summaryCount,
+       IPromptProvider promptProvider,
+       ISummaryGenerator summaryGenerator,
+       ISseStreamWriter sseWriter,
+       CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        //
+        // If combined summaries fit within reasonable token limit,
+        // reduce directly
+        //
+        const int reduceThreshold = 3000;
+
+        var estimatedTokens = combinedSummaries.Length / 4;
+
+        if (estimatedTokens < reduceThreshold)
+        {
+            var reducePrompt = promptProvider
+                .GetPrompt("reduce")
+                .Replace("{text}", combinedSummaries);
+
+            var reduceRequest = new AiRequest
+            {
+                Provider = request.Provider,
+                Model = request.Model,
+                Prompt = reducePrompt,
+            };
+
+            var finalSummaryBuilder = new StringBuilder();
+
+            await foreach (var token in summaryGenerator.SummarizeAsync(
+                               reduceRequest,
+                               ct))
+            {
+                if (string.IsNullOrWhiteSpace(token))
+                    continue;
+
+                finalSummaryBuilder.Append(token);
+
+                await sseWriter.WriteChunkAsync(token, ct);
+            }
+
+            return finalSummaryBuilder.ToString().Trim();
+        }
+
+        //
+        // If too large, split into groups
+        //
+        var summaryLines = combinedSummaries.Split(
+            "\n\n",
+            StringSplitOptions.RemoveEmptyEntries);
+
+        var groupSize = Math.Max(
+            2,
+            summaryLines.Length / 3);
+
+        var reducedGroups = new List<string>();
+
+        for (var i = 0; i < summaryLines.Length; i += groupSize)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var group = string.Join(
+                "\n\n",
+                summaryLines
+                    .Skip(i)
+                    .Take(groupSize));
+
+            var groupReducePrompt = promptProvider
+                .GetPrompt("reduce")
+                .Replace("{text}", group);
+
+            var groupReduceRequest = new AiRequest
+            {
+                Provider = request.Provider,
+                Model = request.Model,
+                Prompt = groupReducePrompt,
+            };
+
+            var groupSummaryBuilder = new StringBuilder();
+
+            await foreach (var token in summaryGenerator.SummarizeAsync(
+                               groupReduceRequest,
+                               ct))
+            {
+                if (string.IsNullOrWhiteSpace(token))
+                    continue;
+
+                groupSummaryBuilder.Append(token);
+            }
+
+            var groupSummary = groupSummaryBuilder
+                .ToString()
+                .Trim();
+
+            if (!string.IsNullOrWhiteSpace(groupSummary))
+            {
+                reducedGroups.Add(groupSummary);
+            }
+
+            //
+            // Rate limiting
+            //
+            await Task.Delay(1500, ct);
+        }
+
+        //
+        // Recursive reduction
+        //
+        if (reducedGroups.Count > 1)
+        {
+            return await ReduceSummariesAsync(
+                request,
+                string.Join("\n\n", reducedGroups),
+                reducedGroups.Count,
+                promptProvider,
+                summaryGenerator,
+                sseWriter,
+                ct);
+        }
+
+        return reducedGroups.FirstOrDefault()
+               ?? string.Empty;
     }
 }

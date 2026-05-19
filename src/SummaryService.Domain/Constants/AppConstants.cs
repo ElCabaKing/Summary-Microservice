@@ -4,8 +4,8 @@ public static class AppConstants
 {
     public const int MaxFileSizeMb = 15;
     public const int MaxTokens = 2048;
-    public const int MaxChunkTokens = 6000;
-    public const int OverlapTokens = 300;
+    public const int MaxChunkTokens = 500;
+    public const int OverlapTokens = 25;
     public const int MaxChunks = 100;
     public const int OcrMaxPages = 100;
     public const int OcrDpi = 300;

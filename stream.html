@@ -57,6 +57,7 @@
   .log .event.chunk { color: #a78bfa; }
   .log .event.completed { color: #34d399; }
   .log .event.error { color: #f87171; }
+  .log .event.info { color: #60a5fa; }
   #summary-output {
     margin-top: 1rem; background: #fff; border-radius: 8px; padding: 1.25rem;
     line-height: 1.6; display: none; box-shadow: 0 1px 3px rgba(0,0,0,.1);
@@ -66,6 +67,21 @@
   #summary-output .content { font-size: .9rem; color: #444; }
   .actions { display: flex; gap: .5rem; }
   .actions button { flex: 1; }
+  .config-section {
+    margin-top: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    background: #fff; padding: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  }
+  .form-group { display: flex; flex-direction: column; }
+  .form-group label {
+    font-size: .875rem; font-weight: 600; margin-bottom: .5rem; color: #333;
+  }
+  .form-group select {
+    padding: .5rem; border: 1px solid #d1d5db; border-radius: 6px;
+    font-size: .95rem; background-color: #fff; cursor: pointer;
+    transition: border-color .2s;
+  }
+  .form-group select:hover { border-color: #2563eb; }
+  .form-group select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
 </style>
 </head>
 <body>
@@ -78,6 +94,22 @@
     <div>Arrastrá un archivo o hacé clic para seleccionar</div>
     <div class="file-name" id="fileName"></div>
     <input type="file" id="fileInput" accept=".pdf,.txt,application/pdf,text/plain">
+  </div>
+
+  <div class="config-section">
+    <div class="form-group">
+      <label for="providerSelect">Provider:</label>
+      <select id="providerSelect">
+        <option value="groq">Groq</option>
+        <option value="gemini">Gemini</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="modelSelect">Modelo:</label>
+      <select id="modelSelect">
+        <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+      </select>
+    </div>
   </div>
 
   <div class="actions">
@@ -101,6 +133,24 @@
 <script>
 const API_URL = 'http://localhost:5171/api/v1/summaries/stream';
 
+// Configuración de providers y modelos
+const PROVIDERS_CONFIG = {
+  groq: {
+    label: 'Groq',
+    models: [
+      { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Recomendado)' },
+      { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
+      { value: 'gemma-7b-it', label: 'Gemma 7B' }
+    ]
+  },
+  gemini: {
+    label: 'Gemini',
+    models: [
+      { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' }
+    ]
+  }
+};
+
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const fileName = document.getElementById('fileName');
@@ -112,9 +162,27 @@ const statusEl = document.getElementById('status');
 const logEl = document.getElementById('log');
 const summaryOutput = document.getElementById('summary-output');
 const summaryContent = document.getElementById('summaryContent');
+const providerSelect = document.getElementById('providerSelect');
+const modelSelect = document.getElementById('modelSelect');
 
 let selectedFile = null;
 let abortController = null;
+
+// Actualizar modelos cuando cambia el provider
+function updateModels() {
+  const provider = providerSelect.value;
+  const config = PROVIDERS_CONFIG[provider];
+  modelSelect.innerHTML = '';
+  
+  config.models.forEach(model => {
+    const option = document.createElement('option');
+    option.value = model.value;
+    option.textContent = model.label;
+    modelSelect.appendChild(option);
+  });
+}
+
+providerSelect.addEventListener('change', updateModels);
 
 function updateUI() {
   const hasFile = selectedFile !== null;
@@ -186,10 +254,14 @@ btnSend.addEventListener('click', async () => {
   btnSend.disabled = true;
   btnCancel.disabled = false;
 
+  addLog('info', `Provider: ${providerSelect.options[providerSelect.selectedIndex].text}, Modelo: ${modelSelect.options[modelSelect.selectedIndex].text}`);
+
   abortController = new AbortController();
 
   const formData = new FormData();
   formData.append('document', selectedFile);
+  formData.append('provider', providerSelect.value);
+  formData.append('model', modelSelect.value);
 
   try {
     const response = await fetch(API_URL, {
@@ -288,6 +360,9 @@ btnSend.addEventListener('click', async () => {
     abortController = null;
   }
 });
+
+// Inicializar modelos al cargar
+updateModels();
 </script>
 </body>
 </html>

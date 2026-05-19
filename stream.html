@@ -1,368 +1,549 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Resumen por Streaming</title>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #f5f5f5; color: #1a1a1a; padding: 2rem; min-height: 100vh;
-  }
-  .container { max-width: 720px; margin: 0 auto; }
-  h1 { font-size: 1.5rem; margin-bottom: .5rem; }
-  p { color: #666; margin-bottom: 1.5rem; font-size: .9rem; }
-  .drop-zone {
-    border: 2px dashed #ccc; border-radius: 12px; padding: 2.5rem 2rem;
-    text-align: center; transition: all .2s; cursor: pointer; background: #fff;
-  }
-  .drop-zone:hover, .drop-zone.dragover {
-    border-color: #2563eb; background: #eff6ff;
-  }
-  .drop-zone.has-file {
-    border-color: #16a34a; border-style: solid; background: #f0fdf4;
-  }
-  .drop-zone input { display: none; }
-  .drop-zone .icon { font-size: 2rem; margin-bottom: .5rem; }
-  .drop-zone .file-name { font-weight: 600; }
-  button {
-    display: block; width: 100%; margin-top: 1rem; padding: .75rem;
-    border: none; border-radius: 8px; font-size: 1rem; font-weight: 600;
-    cursor: pointer; transition: background .2s;
-  }
-  button:disabled { opacity: .5; cursor: not-allowed; }
-  .btn-primary { background: #2563eb; color: #fff; }
-  .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
-  .btn-danger { background: #dc2626; color: #fff; }
-  .btn-danger:hover:not(:disabled) { background: #b91c1c; }
-  .progress-bar {
-    margin-top: 1rem; height: 4px; background: #e5e7eb; border-radius: 4px;
-    overflow: hidden; display: none;
-  }
-  .progress-bar.active { display: block; }
-  .progress-bar .fill {
-    height: 100%; width: 0%; background: #2563eb; transition: width .3s;
-  }
-  .status { margin-top: .75rem; font-size: .875rem; color: #666; }
-  .log {
-    margin-top: 1rem; background: #1a1a2e; color: #e0e0e0;
-    border-radius: 8px; padding: 1rem; font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: .8rem; max-height: 400px; overflow-y: auto; white-space: pre-wrap;
-    word-break: break-word; display: none;
-  }
-  .log.active { display: block; }
-  .log .event { margin-bottom: .25rem; }
-  .log .event.status { color: #fbbf24; }
-  .log .event.chunk { color: #a78bfa; }
-  .log .event.completed { color: #34d399; }
-  .log .event.error { color: #f87171; }
-  .log .event.info { color: #60a5fa; }
-  #summary-output {
-    margin-top: 1rem; background: #fff; border-radius: 8px; padding: 1.25rem;
-    line-height: 1.6; display: none; box-shadow: 0 1px 3px rgba(0,0,0,.1);
-  }
-  #summary-output.visible { display: block; }
-  #summary-output h2 { font-size: 1rem; margin-bottom: .5rem; color: #333; }
-  #summary-output .content { font-size: .9rem; color: #444; }
-  .actions { display: flex; gap: .5rem; }
-  .actions button { flex: 1; }
-  .config-section {
-    margin-top: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
-    background: #fff; padding: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.1);
-  }
-  .form-group { display: flex; flex-direction: column; }
-  .form-group label {
-    font-size: .875rem; font-weight: 600; margin-bottom: .5rem; color: #333;
-  }
-  .form-group select {
-    padding: .5rem; border: 1px solid #d1d5db; border-radius: 6px;
-    font-size: .95rem; background-color: #fff; cursor: pointer;
-    transition: border-color .2s;
-  }
-  .form-group select:hover { border-color: #2563eb; }
-  .form-group select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resumen por Streaming</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: .5rem;
+    }
+
+    p {
+      color: #666;
+      margin-bottom: 1.5rem;
+      font-size: .9rem;
+    }
+
+    .drop-zone {
+      border: 2px dashed #ccc;
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      transition: all .2s;
+      cursor: pointer;
+      background: #fff;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.dragover {
+      border-color: #2563eb;
+      background: #eff6ff;
+    }
+
+    .drop-zone.has-file {
+      border-color: #16a34a;
+      border-style: solid;
+      background: #f0fdf4;
+    }
+
+    .drop-zone input {
+      display: none;
+    }
+
+    .drop-zone .icon {
+      font-size: 2rem;
+      margin-bottom: .5rem;
+    }
+
+    .drop-zone .file-name {
+      font-weight: 600;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      margin-top: 1rem;
+      padding: .75rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: #fff;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #b91c1c;
+    }
+
+    .progress-bar {
+      margin-top: 1rem;
+      height: 4px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .progress-bar.active {
+      display: block;
+    }
+
+    .progress-bar .fill {
+      height: 100%;
+      width: 0%;
+      background: #2563eb;
+      transition: width .3s;
+    }
+
+    .status {
+      margin-top: .75rem;
+      font-size: .875rem;
+      color: #666;
+    }
+
+    .log {
+      margin-top: 1rem;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: .8rem;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      display: none;
+    }
+
+    .log.active {
+      display: block;
+    }
+
+    .log .event {
+      margin-bottom: .25rem;
+    }
+
+    .log .event.status {
+      color: #fbbf24;
+    }
+
+    .log .event.chunk {
+      color: #a78bfa;
+    }
+
+    .log .event.completed {
+      color: #34d399;
+    }
+
+    .log .event.error {
+      color: #f87171;
+    }
+
+    .log .event.info {
+      color: #60a5fa;
+    }
+
+    #summary-output {
+      margin-top: 1rem;
+      background: #fff;
+      border-radius: 8px;
+      padding: 1.25rem;
+      line-height: 1.6;
+      display: none;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
+    }
+
+    #summary-output.visible {
+      display: block;
+    }
+
+    #summary-output h2 {
+      font-size: 1rem;
+      margin-bottom: .5rem;
+      color: #333;
+    }
+
+    #summary-output .content {
+      font-size: .9rem;
+      color: #444;
+    }
+
+    .actions {
+      display: flex;
+      gap: .5rem;
+    }
+
+    .actions button {
+      flex: 1;
+    }
+
+    .config-section {
+      margin-top: 1rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-size: .875rem;
+      font-weight: 600;
+      margin-bottom: .5rem;
+      color: #333;
+    }
+
+    .form-group select {
+      padding: .5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: .95rem;
+      background-color: #fff;
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+
+    .form-group select:hover {
+      border-color: #2563eb;
+    }
+
+    .form-group select:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+  </style>
 </head>
+
 <body>
-<div class="container">
-  <h1>Resumen por Streaming</h1>
-  <p>Subí un PDF o TXT y recibí el resumen en tiempo real via SSE.</p>
+  <div class="container">
+    <h1>Resumen por Streaming</h1>
+    <p>Subí un PDF o TXT y recibí el resumen en tiempo real via SSE.</p>
 
-  <div class="drop-zone" id="dropZone">
-    <div class="icon">&#128196;</div>
-    <div>Arrastrá un archivo o hacé clic para seleccionar</div>
-    <div class="file-name" id="fileName"></div>
-    <input type="file" id="fileInput" accept=".pdf,.txt,application/pdf,text/plain">
-  </div>
-
-  <div class="config-section">
-    <div class="form-group">
-      <label for="providerSelect">Provider:</label>
-      <select id="providerSelect">
-        <option value="groq">Groq</option>
-        <option value="gemini">Gemini</option>
-      </select>
+    <div class="drop-zone" id="dropZone">
+      <div class="icon">&#128196;</div>
+      <div>Arrastrá un archivo o hacé clic para seleccionar</div>
+      <div class="file-name" id="fileName"></div>
+      <input type="file" id="fileInput" accept=".pdf,.txt,application/pdf,text/plain">
     </div>
-    <div class="form-group">
-      <label for="modelSelect">Modelo:</label>
-      <select id="modelSelect">
-        <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
-      </select>
+
+    <div class="config-section">
+      <div class="form-group">
+        <label for="providerSelect">Provider:</label>
+        <select id="providerSelect">
+          <option value="groq">Groq</option>
+          <option value="gemini">Gemini</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="modelSelect">Modelo:</label>
+        <select id="modelSelect">
+          <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" id="btnSend" disabled>Enviar</button>
+      <button class="btn-danger" id="btnCancel" disabled>Cancelar</button>
+    </div>
+
+    <div class="progress-bar" id="progressBar">
+      <div class="fill" id="progressFill"></div>
+    </div>
+    <div class="status" id="status"></div>
+
+    <div class="log" id="log"></div>
+
+    <div id="summary-output">
+      <h2>Resumen</h2>
+      <div class="content" id="summaryContent"></div>
     </div>
   </div>
 
-  <div class="actions">
-    <button class="btn-primary" id="btnSend" disabled>Enviar</button>
-    <button class="btn-danger" id="btnCancel" disabled>Cancelar</button>
-  </div>
+  <script>
+    const API_URL = 'http://localhost:5171/api/v1/summaries/stream';
 
-  <div class="progress-bar" id="progressBar">
-    <div class="fill" id="progressFill"></div>
-  </div>
-  <div class="status" id="status"></div>
+    // Configuración de providers y modelos
+    const PROVIDERS_CONFIG = {
+      groq: {
+        label: 'Groq',
+        models: [
+          { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Recomendado)' },
+          { value: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B' },
+          { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant' },
+          { value: 'modeloInexistente', label: 'Modelo Inexistente' }
 
-  <div class="log" id="log"></div>
+        ]
+      },
+      gemini: {
+        label: 'Gemini',
+        models: [
+          { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+          { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+          { value: 'gemini-3-flash-preview', label: 'Gemini 3 Flash (Preview)' },
+          { value: 'gemini-1.5-flash-latest', label: 'Gemini 1.5 Flash' },
+          { value: 'gemini-1.5-pro-latest', label: 'Gemini 1.5 Pro' },
+          { value: 'modeloInexistente', label: 'Modelo Inexistente' }
+        ]
+      }
+    };
 
-  <div id="summary-output">
-    <h2>Resumen</h2>
-    <div class="content" id="summaryContent"></div>
-  </div>
-</div>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileName = document.getElementById('fileName');
+    const btnSend = document.getElementById('btnSend');
+    const btnCancel = document.getElementById('btnCancel');
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+    const statusEl = document.getElementById('status');
+    const logEl = document.getElementById('log');
+    const summaryOutput = document.getElementById('summary-output');
+    const summaryContent = document.getElementById('summaryContent');
+    const providerSelect = document.getElementById('providerSelect');
+    const modelSelect = document.getElementById('modelSelect');
 
-<script>
-const API_URL = 'http://localhost:5171/api/v1/summaries/stream';
+    let selectedFile = null;
+    let abortController = null;
 
-// Configuración de providers y modelos
-const PROVIDERS_CONFIG = {
-  groq: {
-    label: 'Groq',
-    models: [
-      { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Recomendado)' },
-      { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
-      { value: 'gemma-7b-it', label: 'Gemma 7B' }
-    ]
-  },
-  gemini: {
-    label: 'Gemini',
-    models: [
-      { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' }
-    ]
-  }
-};
+    // Actualizar modelos cuando cambia el provider
+    function updateModels() {
+      const provider = providerSelect.value;
+      const config = PROVIDERS_CONFIG[provider];
+      modelSelect.innerHTML = '';
 
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-const fileName = document.getElementById('fileName');
-const btnSend = document.getElementById('btnSend');
-const btnCancel = document.getElementById('btnCancel');
-const progressBar = document.getElementById('progressBar');
-const progressFill = document.getElementById('progressFill');
-const statusEl = document.getElementById('status');
-const logEl = document.getElementById('log');
-const summaryOutput = document.getElementById('summary-output');
-const summaryContent = document.getElementById('summaryContent');
-const providerSelect = document.getElementById('providerSelect');
-const modelSelect = document.getElementById('modelSelect');
+      config.models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.value;
+        option.textContent = model.label;
+        modelSelect.appendChild(option);
+      });
+    }
 
-let selectedFile = null;
-let abortController = null;
+    providerSelect.addEventListener('change', updateModels);
 
-// Actualizar modelos cuando cambia el provider
-function updateModels() {
-  const provider = providerSelect.value;
-  const config = PROVIDERS_CONFIG[provider];
-  modelSelect.innerHTML = '';
-  
-  config.models.forEach(model => {
-    const option = document.createElement('option');
-    option.value = model.value;
-    option.textContent = model.label;
-    modelSelect.appendChild(option);
-  });
-}
+    function updateUI() {
+      const hasFile = selectedFile !== null;
+      dropZone.classList.toggle('has-file', hasFile);
+      fileName.textContent = hasFile ? selectedFile.name : '';
+      btnSend.disabled = !hasFile;
+    }
 
-providerSelect.addEventListener('change', updateModels);
+    dropZone.addEventListener('click', () => fileInput.click());
 
-function updateUI() {
-  const hasFile = selectedFile !== null;
-  dropZone.classList.toggle('has-file', hasFile);
-  fileName.textContent = hasFile ? selectedFile.name : '';
-  btnSend.disabled = !hasFile;
-}
-
-dropZone.addEventListener('click', () => fileInput.click());
-
-dropZone.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  dropZone.classList.add('dragover');
-});
-dropZone.addEventListener('dragleave', () => {
-  dropZone.classList.remove('dragover');
-});
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) setFile(file);
-});
-
-fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) setFile(fileInput.files[0]);
-});
-
-function setFile(file) {
-  selectedFile = file;
-  updateUI();
-}
-
-function addLog(event, data) {
-  logEl.classList.add('active');
-  const line = document.createElement('div');
-  line.className = `event ${event}`;
-  line.textContent = `[${event}] ${typeof data === 'string' ? data : JSON.stringify(data)}`;
-  logEl.appendChild(line);
-  logEl.scrollTop = logEl.scrollHeight;
-}
-
-function setStatus(msg) {
-  statusEl.textContent = msg;
-}
-
-function setProgress(pct) {
-  progressBar.classList.add('active');
-  progressFill.style.width = pct + '%';
-}
-
-btnCancel.addEventListener('click', () => {
-  if (abortController) {
-    abortController.abort();
-    abortController = null;
-  }
-  setStatus('Cancelado');
-  btnCancel.disabled = true;
-});
-
-btnSend.addEventListener('click', async () => {
-  if (!selectedFile) return;
-
-  summaryOutput.classList.remove('visible');
-  summaryContent.textContent = '';
-  logEl.classList.remove('active');
-  logEl.innerHTML = '';
-  progressFill.style.width = '0%';
-  btnSend.disabled = true;
-  btnCancel.disabled = false;
-
-  addLog('info', `Provider: ${providerSelect.options[providerSelect.selectedIndex].text}, Modelo: ${modelSelect.options[modelSelect.selectedIndex].text}`);
-
-  abortController = new AbortController();
-
-  const formData = new FormData();
-  formData.append('document', selectedFile);
-  formData.append('provider', providerSelect.value);
-  formData.append('model', modelSelect.value);
-
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      body: formData,
-      signal: abortController.signal,
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) setFile(file);
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`HTTP ${response.status}: ${text}`);
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) setFile(fileInput.files[0]);
+    });
+
+    function setFile(file) {
+      selectedFile = file;
+      updateUI();
     }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let fullSummary = '';
-    let chunkCount = 0;
+    function addLog(event, data) {
+      logEl.classList.add('active');
+      const line = document.createElement('div');
+      line.className = `event ${event}`;
+      line.textContent = `[${event}] ${typeof data === 'string' ? data : JSON.stringify(data)}`;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
 
-    setProgress(30);
-    setStatus('Conectado, recibiendo eventos...');
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+    }
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    function setProgress(pct) {
+      progressBar.classList.add('active');
+      progressFill.style.width = pct + '%';
+    }
 
-      buffer += decoder.decode(value, { stream: true });
-
-      const lines = buffer.split('\n');
-      buffer = lines.pop(); // keep incomplete line in buffer
-
-      let currentEvent = null;
-      let currentData = null;
-
-      for (const line of lines) {
-        if (line.startsWith('event: ')) {
-          currentEvent = line.slice(7).trim();
-        } else if (line.startsWith('data: ')) {
-          currentData = line.slice(6).trim();
-        } else if (line === '' && currentEvent && currentData) {
-          // SSE event complete
-          try {
-            const json = JSON.parse(currentData);
-            addLog(currentEvent, json);
-
-            switch (currentEvent) {
-              case 'status':
-                setStatus(`Estado: ${json.status}`);
-                if (json.status === 'extracting_text') setProgress(10);
-                else if (json.status === 'chunking_document') setProgress(30);
-                else if (json.status === 'generating_summary') setProgress(50);
-                else if (json.status === 'reducing_summary') setProgress(80);
-                break;
-
-              case 'chunk':
-                chunkCount++;
-                fullSummary += json.data;
-                setProgress(Math.min(50 + (chunkCount % 20) * 2, 95));
-                break;
-
-              case 'completed':
-                fullSummary = json.summary;
-                summaryContent.textContent = fullSummary;
-                summaryOutput.classList.add('visible');
-                setProgress(100);
-                setStatus('Completado');
-                btnCancel.disabled = true;
-                addLog('completed', 'Resumen recibido exitosamente');
-                break;
-
-              case 'error':
-                setStatus('Error: ' + json.error);
-                addLog(currentEvent, json);
-                btnCancel.disabled = true;
-                break;
-            }
-          } catch (e) {
-            addLog('parse-error', currentData);
-          }
-
-          currentEvent = null;
-          currentData = null;
-        }
+    btnCancel.addEventListener('click', () => {
+      if (abortController) {
+        abortController.abort();
+        abortController = null;
       }
-    }
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      addLog('abort', 'Solicitud cancelada por el usuario');
-    } else {
-      setStatus('Error: ' + err.message);
-      addLog('error', { error: err.message });
-    }
-  } finally {
-    btnSend.disabled = false;
-    btnCancel.disabled = true;
-    abortController = null;
-  }
-});
+      setStatus('Cancelado');
+      btnCancel.disabled = true;
+    });
 
-// Inicializar modelos al cargar
-updateModels();
-</script>
+    btnSend.addEventListener('click', async () => {
+      if (!selectedFile) return;
+
+      summaryOutput.classList.remove('visible');
+      summaryContent.textContent = '';
+      logEl.classList.remove('active');
+      logEl.innerHTML = '';
+      progressFill.style.width = '0%';
+      btnSend.disabled = true;
+      btnCancel.disabled = false;
+
+      addLog('info', `Provider: ${providerSelect.options[providerSelect.selectedIndex].text}, Modelo: ${modelSelect.options[modelSelect.selectedIndex].text}`);
+
+      abortController = new AbortController();
+
+      const formData = new FormData();
+      formData.append('document', selectedFile);
+      formData.append('provider', providerSelect.value);
+      formData.append('model', modelSelect.value);
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          body: formData,
+          signal: abortController.signal,
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`HTTP ${response.status}: ${text}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullSummary = '';
+        let chunkCount = 0;
+
+        setProgress(30);
+        setStatus('Conectado, recibiendo eventos...');
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split('\n');
+          buffer = lines.pop(); // keep incomplete line in buffer
+
+          let currentEvent = null;
+          let currentData = null;
+
+          for (const line of lines) {
+            if (line.startsWith('event: ')) {
+              currentEvent = line.slice(7).trim();
+            } else if (line.startsWith('data: ')) {
+              currentData = line.slice(6).trim();
+            } else if (line === '' && currentEvent && currentData) {
+              // SSE event complete
+              try {
+                const json = JSON.parse(currentData);
+                addLog(currentEvent, json);
+
+                switch (currentEvent) {
+                  case 'status':
+                    setStatus(`Estado: ${json.status}`);
+                    if (json.status === 'extracting_text') setProgress(10);
+                    else if (json.status === 'chunking_document') setProgress(30);
+                    else if (json.status === 'generating_summary') setProgress(50);
+                    else if (json.status === 'reducing_summary') setProgress(80);
+                    break;
+
+                  case 'chunk':
+                    chunkCount++;
+                    fullSummary += json.data;
+                    setProgress(Math.min(50 + (chunkCount % 20) * 2, 95));
+                    break;
+
+                  case 'completed':
+                    fullSummary = json.summary;
+                    summaryContent.textContent = fullSummary;
+                    summaryOutput.classList.add('visible');
+                    setProgress(100);
+                    setStatus('Completado');
+                    btnCancel.disabled = true;
+                    addLog('completed', 'Resumen recibido exitosamente');
+                    break;
+
+                  case 'error':
+                    setStatus('Error: ' + json.error);
+                    addLog(currentEvent, json);
+                    btnCancel.disabled = true;
+                    break;
+                }
+              } catch (e) {
+                addLog('parse-error', currentData);
+              }
+
+              currentEvent = null;
+              currentData = null;
+            }
+          }
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          addLog('abort', 'Solicitud cancelada por el usuario');
+        } else {
+          setStatus('Error: ' + err.message);
+          addLog('error', { error: err.message });
+        }
+      } finally {
+        btnSend.disabled = false;
+        btnCancel.disabled = true;
+        abortController = null;
+      }
+    });
+
+    // Inicializar modelos al cargar
+    updateModels();
+  </script>
 </body>
+
 </html>

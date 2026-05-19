@@ -1,3 +1,4 @@
+
 using SummaryService.Application.Models;
 using SummaryService.Application.UseCases;
 
@@ -17,6 +18,7 @@ public static class SummaryEndpoints
         app.MapPost("/api/v1/summaries/stream", async (
             HttpContext context,
             SummarizeDocumentUseCase useCase,
+            IConfiguration configuration,
             CancellationToken ct) =>
         {
             context.Response.ContentType = "text/event-stream";
@@ -62,6 +64,23 @@ public static class SummaryEndpoints
             if (string.IsNullOrWhiteSpace(model))
             {
                 model = "llama-3.3-70b-versatile";
+            }
+
+            // Validate that requested model exists in configured provider models
+            var modelsSection = configuration.GetSection($"AI:Providers:{provider}:Models");
+            var allowedModels = modelsSection.Exists()
+                ? modelsSection.Get<List<string>>() ?? new List<string>()
+                : new List<string>();
+
+            if (!allowedModels.Contains(model))
+            {
+                var allowed = allowedModels.Any() ? string.Join(", ", allowedModels) : "(no models configured)";
+                await WriteSseError(
+                    context,
+                    $"Modelo '{model}' no permitido para provider '{provider}'. Modelos válidos: {allowed}",
+                    ct);
+
+                return;
             }
 
             await using var stream = file.OpenReadStream();

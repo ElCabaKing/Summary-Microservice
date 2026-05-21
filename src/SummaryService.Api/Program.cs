@@ -8,6 +8,7 @@ using SummaryService.Application.Validators;
 using SummaryService.Infrastructure.Chunking;
 using SummaryService.Infrastructure.Factory;
 using SummaryService.Infrastructure.Llm;
+using SummaryService.Domain.Options;
 using SummaryService.Infrastructure.Llm.Options;
 using SummaryService.Infrastructure.Pdf;
 using SummaryService.Infrastructure.Sse;
@@ -86,6 +87,18 @@ builder.Services.Configure<AiOptions>(
     builder.Configuration.GetSection("AI"));
 
 builder.Services.AddSingleton<IKernelFactory, KernelFactory>();
+
+//
+// Configuration Options
+//
+builder.Services.Configure<ChunkingOptions>(
+    builder.Configuration.GetSection(ChunkingOptions.SectionName));
+
+builder.Services.Configure<SummaryOptions>(
+    builder.Configuration.GetSection(SummaryOptions.SectionName));
+
+builder.Services.Configure<OcrOptions>(
+    builder.Configuration.GetSection(OcrOptions.SectionName));
 
 builder.Services.AddScoped<IStreamingTextGenerator,
     SemanticKernelStreamingTextGenerator>();

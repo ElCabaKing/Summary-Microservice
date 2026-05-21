@@ -1,10 +1,11 @@
+using Microsoft.Extensions.Options;
 using SummaryService.Application.Interfaces;
-using SummaryService.Domain.Constants;
+using SummaryService.Domain.Options;
 using Microsoft.Extensions.Logging;
 
 namespace SummaryService.Infrastructure.Chunking;
 
-public sealed class TextChunker(ITokenEstimator tokenEstimator, ILogger<TextChunker> logger) : ITextChunker
+public sealed class TextChunker(ITokenEstimator tokenEstimator, IOptions<ChunkingOptions> chunkingOptions, ILogger<TextChunker> logger) : ITextChunker
 {
     public IReadOnlyList<string> Chunk(string text, CancellationToken ct)
     {
@@ -16,8 +17,8 @@ public sealed class TextChunker(ITokenEstimator tokenEstimator, ILogger<TextChun
         var paragraphs = text.Split("\n\n", StringSplitOptions.RemoveEmptyEntries);
         var chunks = new List<string>();
         var currentChunk = new System.Text.StringBuilder();
-        var maxTokens = AppConstants.MaxChunkTokens;
-        var overlapTokens = AppConstants.OverlapTokens;
+        var maxTokens = chunkingOptions.Value.MaxChunkTokens;
+        var overlapTokens = chunkingOptions.Value.OverlapTokens;
 
         foreach (var paragraph in paragraphs)
         {

@@ -98,13 +98,26 @@ public static class SummaryEndpoints
                 };
             }
 
+            var temperatureStr = form["temperature"].ToString();
+            var maxTokensStr = form["maxTokens"].ToString();
+
+            float temperature = 0.2f;
+            if (!string.IsNullOrWhiteSpace(temperatureStr))
+                float.TryParse(temperatureStr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out temperature);
+
+            int? maxTokens = null;
+            if (!string.IsNullOrWhiteSpace(maxTokensStr) && int.TryParse(maxTokensStr, out var parsedMax))
+                maxTokens = parsedMax;
+
             await useCase.ExecuteAsync(
                 new SummaryStreamRequest
                 {
                     Document = stream,
                     ContentType = contentType,
                     Provider = provider,
-                    Model = model
+                    Model = model,
+                    Temperature = temperature,
+                    MaxTokens = maxTokens
                 },
                 ct);
         })

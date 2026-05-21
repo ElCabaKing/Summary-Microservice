@@ -6,4 +6,8 @@ public sealed class AiRequest
     public string Model { get; init; } = default!;
 
     public string Prompt { get; init; } = default!;
+
+    public float Temperature { get; init; } = 0.2f;
+
+    public int? MaxTokens { get; init; }
 }

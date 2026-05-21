@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 using SummaryService.Application.Interfaces;
 using SummaryService.Application.Models;
 using SummaryService.Infrastructure.Factory;
@@ -29,8 +30,17 @@ public sealed class SemanticKernelStreamingTextGenerator(
 
         var function = kernel.CreateFunctionFromPrompt(request.Prompt);
 
+        var executionSettings = new OpenAIPromptExecutionSettings
+        {
+            Temperature = request.Temperature,
+            MaxTokens = request.MaxTokens
+        };
+
+        var arguments = new KernelArguments(executionSettings);
+
         var result = kernel.InvokeStreamingAsync(
             function,
+            arguments,
             cancellationToken: ct);
 
         await foreach (var token in result)

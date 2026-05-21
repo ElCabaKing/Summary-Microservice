@@ -12,6 +12,7 @@ public sealed class SummarizeDocumentUseCase(
     IDocumentParser documentParser,
     ITextChunker textChunker,
     IPromptProvider promptProvider,
+    ITokenEstimator tokenEstimator,
     ISummaryGenerator summaryGenerator,
     ISseStreamWriter sseWriter)
 {
@@ -83,7 +84,9 @@ public sealed class SummarizeDocumentUseCase(
                 {
                     Provider = request.Provider,
                     Model = request.Model,
-                    Prompt = chunkPrompt
+                    Prompt = chunkPrompt,
+                    Temperature = request.Temperature,
+                    MaxTokens = request.MaxTokens
                 };
 
 
@@ -202,7 +205,7 @@ public sealed class SummarizeDocumentUseCase(
         //
         const int reduceThreshold = 3000;
 
-        var estimatedTokens = combinedSummaries.Length / 4;
+        var estimatedTokens = tokenEstimator.EstimateTokens(combinedSummaries);
 
         if (estimatedTokens < reduceThreshold)
         {
@@ -215,6 +218,8 @@ public sealed class SummarizeDocumentUseCase(
                 Provider = request.Provider,
                 Model = request.Model,
                 Prompt = reducePrompt,
+                Temperature = request.Temperature,
+                MaxTokens = request.MaxTokens
             };
 
             var finalSummaryBuilder = new StringBuilder();
@@ -266,6 +271,8 @@ public sealed class SummarizeDocumentUseCase(
                 Provider = request.Provider,
                 Model = request.Model,
                 Prompt = groupReducePrompt,
+                Temperature = request.Temperature,
+                MaxTokens = request.MaxTokens
             };
 
             var groupSummaryBuilder = new StringBuilder();

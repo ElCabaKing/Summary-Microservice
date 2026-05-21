@@ -4,8 +4,20 @@ using Microsoft.Extensions.Logging;
 
 namespace SummaryService.Infrastructure.Chunking;
 
+/// <summary>
+/// Splits text into chunks constrained by <see cref="AppConstants.MaxChunkTokens"/>.
+/// Process overview:
+/// 1) Split the document by double line breaks (paragraphs).
+/// 2) Split oversized paragraphs into smaller sub-paragraphs (by lines, then by words).
+/// 3) Append sub-paragraphs to the current chunk until the token limit is reached.
+/// 4) When a chunk is closed, prepend a small overlap from the previous chunk.
+/// </summary>
 public sealed class TextChunker(ITokenEstimator tokenEstimator, ILogger<TextChunker> logger) : ITextChunker
 {
+    /// <summary>
+    /// Creates chunked text segments from a full document while preserving continuity
+    /// with a token overlap between consecutive chunks.
+    /// </summary>
     public IReadOnlyList<string> Chunk(string text, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -66,6 +78,10 @@ public sealed class TextChunker(ITokenEstimator tokenEstimator, ILogger<TextChun
         return chunks;
     }
 
+    /// <summary>
+    /// Splits a paragraph only when it exceeds token limits.
+    /// It tries line-based splitting first, and falls back to word-based splitting.
+    /// </summary>
     private List<string> DivideParagraphIfNeeded(string paragraph, int maxTokens, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();

@@ -38,6 +38,36 @@
       font-size: .9rem;
     }
 
+    .section {
+      margin-top: 1rem;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .section-header h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .section-body {
+      margin-top: 1rem;
+    }
+
+    .section-body.hidden {
+      display: none;
+    }
+
     .drop-zone {
       border: 2px dashed #ccc;
       border-radius: 12px;
@@ -107,6 +137,133 @@
 
     .btn-danger:hover:not(:disabled) {
       background: #b91c1c;
+    }
+
+    .btn-success {
+      background: #16a34a;
+      color: #fff;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: #15803d;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid #d1d5db;
+      color: #374151;
+    }
+
+    .btn-outline:hover:not(:disabled) {
+      background: #f3f4f6;
+    }
+
+    .btn-sm {
+      display: inline-block;
+      width: auto;
+      padding: .4rem .75rem;
+      font-size: .8rem;
+      margin-top: 0;
+    }
+
+    .actions {
+      display: flex;
+      gap: .5rem;
+    }
+
+    .actions button {
+      flex: 1;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-size: .875rem;
+      font-weight: 600;
+      margin-bottom: .25rem;
+      color: #333;
+    }
+
+    .form-group select,
+    .form-group input,
+    .form-group textarea {
+      padding: .5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: .9rem;
+      background: #fff;
+      transition: border-color .2s;
+    }
+
+    .form-group select:focus,
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-group textarea {
+      min-height: 80px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: .8rem;
+      resize: vertical;
+    }
+
+    .form-group input[type="range"] {
+      padding: 0;
+      border: none;
+      margin-top: .25rem;
+    }
+
+    .form-group input[type="number"] {
+      width: 100%;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      padding: .25rem .6rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+
+    .badge-tenant {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .badge-role {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge-inactive {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge-active {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge-group {
+      display: flex;
+      gap: .5rem;
+      align-items: center;
+      margin-top: .5rem;
     }
 
     .progress-bar {
@@ -203,56 +360,50 @@
       color: #444;
     }
 
-    .actions {
-      display: flex;
-      gap: .5rem;
-    }
-
-    .actions button {
-      flex: 1;
-    }
-
-    .config-section {
-      margin-top: 1rem;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      background: #fff;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .form-group label {
-      font-size: .875rem;
-      font-weight: 600;
-      margin-bottom: .5rem;
-      color: #333;
-    }
-
-    .form-group select {
-      padding: .5rem;
-      border: 1px solid #d1d5db;
+    .result-msg {
+      margin-top: .75rem;
+      padding: .5rem .75rem;
       border-radius: 6px;
-      font-size: .95rem;
-      background-color: #fff;
-      cursor: pointer;
-      transition: border-color .2s;
+      font-size: .85rem;
+      display: none;
     }
 
-    .form-group select:hover {
-      border-color: #2563eb;
+    .result-msg.success {
+      display: block;
+      background: #dcfce7;
+      color: #166534;
     }
 
-    .form-group select:focus {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    .result-msg.error {
+      display: block;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .admin-warning {
+      text-align: center;
+      color: #92400e;
+      font-size: .85rem;
+      padding: .5rem;
+      background: #fef3c7;
+      border-radius: 6px;
+    }
+
+    .tenant-info-bar {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .5rem .75rem;
+      background: #f0f9ff;
+      border-radius: 6px;
+      margin-bottom: .75rem;
+      font-size: .85rem;
+      color: #1e40af;
+      flex-wrap: wrap;
+    }
+
+    .tenant-info-bar .label {
+      font-weight: 600;
     }
   </style>
 </head>
@@ -262,49 +413,125 @@
     <h1>Resumen por Streaming</h1>
     <p>Subí un PDF o TXT y recibí el resumen en tiempo real via SSE.</p>
 
-    <div class="drop-zone" id="dropZone">
-      <div class="icon">&#128196;</div>
-      <div>Arrastrá un archivo o hacé clic para seleccionar</div>
-      <div class="file-name" id="fileName"></div>
-      <input type="file" id="fileInput" accept=".pdf,.txt,application/pdf,text/plain">
-    </div>
-
-    <div class="config-section">
-      <div class="form-group">
-        <label for="providerSelect">Provider:</label>
-        <select id="providerSelect">
-          <option value="groq">Groq</option>
-          <option value="gemini">Gemini</option>
-        </select>
+    <!-- JWT Section -->
+    <div class="section">
+      <div class="section-header">
+        <h3>🔑 JWT Token</h3>
+        <div>
+          <button class="btn-sm btn-outline" id="btnClearJwt" style="display:none">🗑 Limpiar</button>
+        </div>
       </div>
       <div class="form-group">
-        <label for="modelSelect">Modelo:</label>
-        <select id="modelSelect">
-          <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
-        </select>
+        <textarea id="jwtTextarea" placeholder="Pegá acá el JWT token..."></textarea>
+      </div>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem">
+        <button class="btn-primary btn-sm" id="btnSaveJwt" style="width:auto">Guardar Token</button>
+      </div>
+      <div class="badge-group" id="jwtBadges" style="display:none">
+        <span class="badge badge-tenant" id="tenantBadge">Tenant: —</span>
+        <span class="badge badge-role" id="roleBadge">Role: —</span>
+        <span class="badge badge-active" id="expBadge" style="display:none">Válido</span>
+        <span class="badge badge-inactive" id="expiredBadge" style="display:none">Expirado</span>
       </div>
     </div>
 
-    <div class="actions">
-      <button class="btn-primary" id="btnSend" disabled>Enviar</button>
-      <button class="btn-danger" id="btnCancel" disabled>Cancelar</button>
+    <!-- Admin Section -->
+    <div class="section" id="adminSection" style="display:none">
+      <div class="section-header" id="adminToggle">
+        <h3>⚙️ Configurar Provider (admin)</h3>
+        <span id="adminArrow">▶</span>
+      </div>
+      <div class="section-body hidden" id="adminBody">
+        <div class="form-group" style="margin-bottom:.75rem">
+          <label for="adminTenantId">Tenant ID</label>
+          <input type="text" id="adminTenantId" placeholder="tenant-alpha">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="adminProvider">Provider</label>
+            <select id="adminProvider">
+              <option value="groq">Groq</option>
+              <option value="gemini">Gemini</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="adminModel">Modelo</label>
+            <input type="text" id="adminModel" placeholder="llama-3.3-70b-versatile">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:.75rem">
+          <label for="adminApiKey">API Key</label>
+          <input type="password" id="adminApiKey" placeholder="gsk_...">
+        </div>
+        <button class="btn-success" id="btnSaveConfig">Guardar Configuración</button>
+        <div class="result-msg" id="adminResult"></div>
+      </div>
     </div>
 
-    <div class="progress-bar" id="progressBar">
-      <div class="fill" id="progressFill"></div>
-    </div>
-    <div class="status" id="status"></div>
+    <!-- Summarizer Section -->
+    <div class="section">
+      <div class="tenant-info-bar" id="tenantInfoBar">
+        <span class="label">Tenant activo:</span>
+        <span id="activeTenantDisplay" style="font-weight:600">—</span>
+      </div>
 
-    <div class="log" id="log"></div>
+      <div class="drop-zone" id="dropZone">
+        <div class="icon">&#128196;</div>
+        <div>Arrastrá un archivo o hacé clic para seleccionar</div>
+        <div class="file-name" id="fileName"></div>
+        <input type="file" id="fileInput" accept=".pdf,.txt,application/pdf,text/plain">
+      </div>
 
-    <div id="summary-output">
-      <h2>Resumen</h2>
-      <div class="content" id="summaryContent"></div>
+      <div class="form-row" style="margin-top:1rem">
+        <div class="form-group">
+          <label for="providerSelect">Provider:</label>
+          <select id="providerSelect">
+            <option value="groq">Groq</option>
+            <option value="gemini">Gemini</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="modelSelect">Modelo:</label>
+          <select id="modelSelect">
+            <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:.75rem">
+        <div class="form-group">
+          <label for="temperatureRange">Temperatura: <span id="temperatureValue">0.2</span></label>
+          <input type="range" id="temperatureRange" min="0" max="2" step="0.1" value="0.2">
+        </div>
+        <div class="form-group">
+          <label for="maxTokensInput">Max Tokens:</label>
+          <input type="number" id="maxTokensInput" min="64" max="8192" step="64" placeholder="2048">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-primary" id="btnSend" disabled>Enviar</button>
+        <button class="btn-danger" id="btnCancel" disabled>Cancelar</button>
+      </div>
+
+      <div class="progress-bar" id="progressBar">
+        <div class="fill" id="progressFill"></div>
+      </div>
+      <div class="status" id="status"></div>
+
+      <div class="log" id="log"></div>
+
+      <div id="summary-output">
+        <h2>Resumen</h2>
+        <div class="content" id="summaryContent"></div>
+      </div>
     </div>
   </div>
 
   <script>
-    const API_URL = 'http://localhost:5171/api/v1/summaries/stream';
+    const BASE_API_URL = 'http://localhost:5171/api/v1';
+    const STREAM_API_URL = BASE_API_URL + '/summaries/stream';
+    const ADMIN_API_URL = BASE_API_URL + '/admin/tenants';
 
     // Configuración de providers y modelos
     const PROVIDERS_CONFIG = {
@@ -313,9 +540,7 @@
         models: [
           { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Recomendado)' },
           { value: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B' },
-          { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant' },
-          { value: 'modeloInexistente', label: 'Modelo Inexistente' }
-
+          { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant' }
         ]
       },
       gemini: {
@@ -325,11 +550,32 @@
           { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
           { value: 'gemini-3-flash-preview', label: 'Gemini 3 Flash (Preview)' },
           { value: 'gemini-1.5-flash-latest', label: 'Gemini 1.5 Flash' },
-          { value: 'gemini-1.5-pro-latest', label: 'Gemini 1.5 Pro' },
-          { value: 'modeloInexistente', label: 'Modelo Inexistente' }
+          { value: 'gemini-1.5-pro-latest', label: 'Gemini 1.5 Pro' }
         ]
       }
     };
+
+    // DOM refs
+    const jwtTextarea = document.getElementById('jwtTextarea');
+    const btnSaveJwt = document.getElementById('btnSaveJwt');
+    const btnClearJwt = document.getElementById('btnClearJwt');
+    const jwtBadges = document.getElementById('jwtBadges');
+    const tenantBadge = document.getElementById('tenantBadge');
+    const roleBadge = document.getElementById('roleBadge');
+    const expBadge = document.getElementById('expBadge');
+    const expiredBadge = document.getElementById('expiredBadge');
+    const activeTenantDisplay = document.getElementById('activeTenantDisplay');
+
+    const adminSection = document.getElementById('adminSection');
+    const adminToggle = document.getElementById('adminToggle');
+    const adminArrow = document.getElementById('adminArrow');
+    const adminBody = document.getElementById('adminBody');
+    const adminTenantId = document.getElementById('adminTenantId');
+    const adminProvider = document.getElementById('adminProvider');
+    const adminModel = document.getElementById('adminModel');
+    const adminApiKey = document.getElementById('adminApiKey');
+    const btnSaveConfig = document.getElementById('btnSaveConfig');
+    const adminResult = document.getElementById('adminResult');
 
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
@@ -344,16 +590,179 @@
     const summaryContent = document.getElementById('summaryContent');
     const providerSelect = document.getElementById('providerSelect');
     const modelSelect = document.getElementById('modelSelect');
+    const temperatureRange = document.getElementById('temperatureRange');
+    const temperatureValue = document.getElementById('temperatureValue');
+    const maxTokensInput = document.getElementById('maxTokensInput');
 
     let selectedFile = null;
     let abortController = null;
+    let jwtToken = null;
 
-    // Actualizar modelos cuando cambia el provider
+    // ── JWT helpers ──
+
+    function decodeJwt(token) {
+      try {
+        const payload = token.split('.')[1];
+        const json = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+        return json;
+      } catch {
+        return null;
+      }
+    }
+
+    function isTokenExpired(payload) {
+      if (!payload || !payload.exp) return true;
+      return Date.now() >= payload.exp * 1000;
+    }
+
+    // ── UI updates ──
+
+    function updateJwtUI() {
+      const token = localStorage.getItem('jwtToken');
+      jwtToken = token || null;
+      jwtTextarea.value = token || '';
+
+      if (!token) {
+        jwtBadges.style.display = 'none';
+        btnClearJwt.style.display = 'none';
+        adminSection.style.display = 'none';
+        activeTenantDisplay.textContent = '—';
+        btnSend.disabled = true;
+        return;
+      }
+
+      const payload = decodeJwt(token);
+      if (!payload) {
+        jwtBadges.style.display = 'flex';
+        tenantBadge.textContent = 'Token inválido';
+        roleBadge.textContent = '';
+        expBadge.style.display = 'none';
+        expiredBadge.style.display = 'none';
+        btnClearJwt.style.display = 'inline-block';
+        adminSection.style.display = 'none';
+        activeTenantDisplay.textContent = 'Token inválido';
+        btnSend.disabled = true;
+        return;
+      }
+
+      const tenantId = payload.tenant_id || '—';
+      const role = payload.role || '—';
+      const expired = isTokenExpired(payload);
+
+      jwtBadges.style.display = 'flex';
+      tenantBadge.textContent = `Tenant: ${tenantId}`;
+      roleBadge.textContent = `Role: ${role}`;
+
+      if (expired) {
+        expBadge.style.display = 'none';
+        expiredBadge.style.display = 'inline-block';
+      } else {
+        expBadge.style.display = 'inline-block';
+        expiredBadge.style.display = 'none';
+      }
+
+      btnClearJwt.style.display = 'inline-block';
+      activeTenantDisplay.textContent = expired ? `${tenantId} (expirado)` : tenantId;
+
+      // Admin section
+      if (role === 'admin' && !expired) {
+        adminSection.style.display = 'block';
+        adminTenantId.value = tenantId !== '—' ? tenantId : '';
+      } else {
+        adminSection.style.display = 'none';
+      }
+
+      // Send button
+      btnSend.disabled = !selectedFile || !token || expired;
+    }
+
+    function saveJwt() {
+      const token = jwtTextarea.value.trim();
+      if (!token) return;
+
+      const payload = decodeJwt(token);
+      if (!payload) {
+        addLog('info', 'Token JWT inválido (no se pudo decodificar)');
+        return;
+      }
+
+      localStorage.setItem('jwtToken', token);
+      addLog('info', `JWT guardado — Tenant: ${payload.tenant_id || '?'}, Role: ${payload.role || '?'}`);
+      updateJwtUI();
+    }
+
+    function clearJwt() {
+      localStorage.removeItem('jwtToken');
+      jwtToken = null;
+      jwtTextarea.value = '';
+      addLog('info', 'Token JWT eliminado');
+      updateJwtUI();
+    }
+
+    // ── Admin ──
+
+    btnSaveConfig.addEventListener('click', async () => {
+      const tenantId = adminTenantId.value.trim();
+      const provider = adminProvider.value;
+      const model = adminModel.value.trim();
+      const apiKey = adminApiKey.value.trim();
+
+      if (!tenantId || !model || !apiKey) {
+        adminResult.className = 'result-msg error';
+        adminResult.textContent = 'Completá todos los campos';
+        adminResult.style.display = 'block';
+        return;
+      }
+
+      btnSaveConfig.disabled = true;
+      btnSaveConfig.textContent = 'Guardando...';
+
+      try {
+        const res = await fetch(`${ADMIN_API_URL}/${encodeURIComponent(tenantId)}/providers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken}`
+          },
+          body: JSON.stringify({ provider, model, apiKey })
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`HTTP ${res.status}: ${text}`);
+        }
+
+        adminResult.className = 'result-msg success';
+        adminResult.textContent = `✓ Provider configurado exitosamente para tenant "${tenantId}"`;
+        adminResult.style.display = 'block';
+        adminApiKey.value = '';
+        addLog('info', `Provider ${provider} configurado para tenant ${tenantId}`);
+      } catch (err) {
+        adminResult.className = 'result-msg error';
+        adminResult.textContent = `Error: ${err.message}`;
+        adminResult.style.display = 'block';
+      } finally {
+        btnSaveConfig.disabled = false;
+        btnSaveConfig.textContent = 'Guardar Configuración';
+      }
+    });
+
+    // ── Admin collapsible ──
+
+    let adminExpanded = false;
+
+    adminToggle.addEventListener('click', () => {
+      adminExpanded = !adminExpanded;
+      adminBody.classList.toggle('hidden', !adminExpanded);
+      adminArrow.textContent = adminExpanded ? '▼' : '▶';
+    });
+
+    // ── Summarizer ──
+
     function updateModels() {
       const provider = providerSelect.value;
       const config = PROVIDERS_CONFIG[provider];
       modelSelect.innerHTML = '';
-
       config.models.forEach(model => {
         const option = document.createElement('option');
         option.value = model.value;
@@ -364,11 +773,16 @@
 
     providerSelect.addEventListener('change', updateModels);
 
+    temperatureRange.addEventListener('input', () => {
+      temperatureValue.textContent = parseFloat(temperatureRange.value).toFixed(1);
+    });
+
     function updateUI() {
       const hasFile = selectedFile !== null;
       dropZone.classList.toggle('has-file', hasFile);
       fileName.textContent = hasFile ? selectedFile.name : '';
-      btnSend.disabled = !hasFile;
+      const hasJwt = jwtToken && !isTokenExpired(decodeJwt(jwtToken));
+      btnSend.disabled = !hasFile || !hasJwt;
     }
 
     dropZone.addEventListener('click', () => fileInput.click());
@@ -424,7 +838,7 @@
     });
 
     btnSend.addEventListener('click', async () => {
-      if (!selectedFile) return;
+      if (!selectedFile || !jwtToken) return;
 
       summaryOutput.classList.remove('visible');
       summaryContent.textContent = '';
@@ -434,7 +848,14 @@
       btnSend.disabled = true;
       btnCancel.disabled = false;
 
-      addLog('info', `Provider: ${providerSelect.options[providerSelect.selectedIndex].text}, Modelo: ${modelSelect.options[modelSelect.selectedIndex].text}`);
+      const payload = decodeJwt(jwtToken);
+      const tenantId = payload?.tenant_id || '?';
+      const temperature = parseFloat(temperatureRange.value);
+      const maxTokens = maxTokensInput.value
+        ? parseInt(maxTokensInput.value, 10)
+        : '';
+
+      addLog('info', `Tenant: ${tenantId}, Provider: ${providerSelect.options[providerSelect.selectedIndex].text}, Modelo: ${modelSelect.options[modelSelect.selectedIndex].text}${maxTokens ? `, MaxTokens: ${maxTokens}` : ''}`);
 
       abortController = new AbortController();
 
@@ -442,10 +863,17 @@
       formData.append('document', selectedFile);
       formData.append('provider', providerSelect.value);
       formData.append('model', modelSelect.value);
+      formData.append('temperature', temperature.toString());
+      if (maxTokens) {
+        formData.append('maxTokens', maxTokens.toString());
+      }
 
       try {
-        const response = await fetch(API_URL, {
+        const response = await fetch(STREAM_API_URL, {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${jwtToken}`
+          },
           body: formData,
           signal: abortController.signal,
         });
@@ -471,7 +899,7 @@
           buffer += decoder.decode(value, { stream: true });
 
           const lines = buffer.split('\n');
-          buffer = lines.pop(); // keep incomplete line in buffer
+          buffer = lines.pop();
 
           let currentEvent = null;
           let currentData = null;
@@ -482,7 +910,6 @@
             } else if (line.startsWith('data: ')) {
               currentData = line.slice(6).trim();
             } else if (line === '' && currentEvent && currentData) {
-              // SSE event complete
               try {
                 const json = JSON.parse(currentData);
                 addLog(currentEvent, json);
@@ -541,8 +968,20 @@
       }
     });
 
-    // Inicializar modelos al cargar
+    // ── JWT event listeners ──
+
+    btnSaveJwt.addEventListener('click', saveJwt);
+
+    jwtTextarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.ctrlKey) saveJwt();
+    });
+
+    btnClearJwt.addEventListener('click', clearJwt);
+
+    // ── Init ──
+
     updateModels();
+    updateJwtUI();
   </script>
 </body>
 

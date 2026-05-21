@@ -122,7 +122,8 @@ public static class SummaryEndpoints
                 ct);
         })
         .WithName("SummarizeStream")
-        .DisableAntiforgery();
+        .DisableAntiforgery()
+        .RequireAuthorization();
     }
 
     private static async Task WriteSseError(

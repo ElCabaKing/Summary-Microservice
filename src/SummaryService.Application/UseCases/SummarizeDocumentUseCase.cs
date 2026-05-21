@@ -13,6 +13,9 @@ public sealed class SummarizeDocumentUseCase(
     ITextChunker textChunker,
     IPromptProvider promptProvider,
     ITokenEstimator tokenEstimator,
+    ITenantContext tenantContext,
+    ITenantProviderRepository tenantProviderRepository,
+    IAesEncryptionService aesEncryptionService,
     ISummaryGenerator summaryGenerator,
     ISseStreamWriter sseWriter)
 {
@@ -22,6 +25,35 @@ public sealed class SummarizeDocumentUseCase(
     {
         try
         {
+            var tenantId = tenantContext.TenantId;
+
+            if (string.IsNullOrWhiteSpace(tenantId))
+            {
+                await sseWriter.WriteErrorAsync(
+                    "No se encontró tenant_id en el token",
+                    ct);
+
+                return Result.Failure(
+                    new Error("NO_TENANT", "No tenant_id in token"));
+            }
+
+            var config = await tenantProviderRepository.GetActiveProviderAsync(
+                tenantId,
+                request.Provider,
+                ct);
+
+            if (config is null)
+            {
+                await sseWriter.WriteErrorAsync(
+                    $"No hay API key configurada para el tenant '{tenantId}' con el provider '{request.Provider}'",
+                    ct);
+
+                return Result.Failure(
+                    new Error("NO_API_KEY", "No apikey relacionada"));
+            }
+
+            var apiKey = aesEncryptionService.Decrypt(config.EncryptedApiKey);
+
             await sseWriter.WriteStatusAsync("extracting_text", ct);
 
             var text = await documentParser.ParseAsync(
@@ -86,7 +118,8 @@ public sealed class SummarizeDocumentUseCase(
                     Model = request.Model,
                     Prompt = chunkPrompt,
                     Temperature = request.Temperature,
-                    MaxTokens = request.MaxTokens
+                    MaxTokens = request.MaxTokens,
+                    ApiKey = apiKey
                 };
 
 
@@ -140,6 +173,7 @@ public sealed class SummarizeDocumentUseCase(
                       request,
                         combinedSummaries,
                         chunkSummaries.Count,
+                        apiKey,
                         promptProvider,
                         summaryGenerator,
                         sseWriter,
@@ -192,6 +226,7 @@ public sealed class SummarizeDocumentUseCase(
        SummaryStreamRequest request,
        string combinedSummaries,
        int summaryCount,
+       string apiKey,
        IPromptProvider promptProvider,
        ISummaryGenerator summaryGenerator,
        ISseStreamWriter sseWriter,
@@ -219,7 +254,8 @@ public sealed class SummarizeDocumentUseCase(
                 Model = request.Model,
                 Prompt = reducePrompt,
                 Temperature = request.Temperature,
-                MaxTokens = request.MaxTokens
+                MaxTokens = request.MaxTokens,
+                ApiKey = apiKey
             };
 
             var finalSummaryBuilder = new StringBuilder();
@@ -272,7 +308,8 @@ public sealed class SummarizeDocumentUseCase(
                 Model = request.Model,
                 Prompt = groupReducePrompt,
                 Temperature = request.Temperature,
-                MaxTokens = request.MaxTokens
+                MaxTokens = request.MaxTokens,
+                ApiKey = apiKey
             };
 
             var groupSummaryBuilder = new StringBuilder();
@@ -311,6 +348,7 @@ public sealed class SummarizeDocumentUseCase(
                 request,
                 string.Join("\n\n", reducedGroups),
                 reducedGroups.Count,
+                apiKey,
                 promptProvider,
                 summaryGenerator,
                 sseWriter,

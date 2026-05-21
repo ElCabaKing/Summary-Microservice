@@ -26,7 +26,8 @@ public sealed class SemanticKernelStreamingTextGenerator(
 
         var kernel = kernelFactory.Create(
             request.Provider,
-            request.Model);
+            request.Model,
+            request.ApiKey);
 
         var function = kernel.CreateFunctionFromPrompt(request.Prompt);
 

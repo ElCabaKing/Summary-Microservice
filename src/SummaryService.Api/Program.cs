@@ -1,16 +1,21 @@
+using System.Text;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using SummaryService.Api.Endpoints;
 using SummaryService.Api.Middleware;
 using SummaryService.Application.Interfaces;
 using SummaryService.Application.UseCases;
 using SummaryService.Application.Validators;
+using SummaryService.Domain.Options;
 using SummaryService.Infrastructure.Chunking;
+using SummaryService.Infrastructure.Encryption;
 using SummaryService.Infrastructure.Factory;
 using SummaryService.Infrastructure.Llm;
-using SummaryService.Domain.Options;
 using SummaryService.Infrastructure.Llm.Options;
 using SummaryService.Infrastructure.Pdf;
+using SummaryService.Infrastructure.Persistence;
 using SummaryService.Infrastructure.Sse;
 
 // Load .env file
@@ -49,6 +54,25 @@ if (!string.IsNullOrEmpty(geminiApiKey))
 {
     builder.Configuration["AI:Providers:gemini:ApiKey"] = geminiApiKey;
 }
+
+var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
+if (!string.IsNullOrEmpty(jwtSecret))
+{
+    builder.Configuration["Jwt:SecretKey"] = jwtSecret;
+}
+
+var aesKey = Environment.GetEnvironmentVariable("AES_KEY");
+if (!string.IsNullOrEmpty(aesKey))
+{
+    builder.Configuration["Aes:Key"] = aesKey;
+}
+
+var sqlConnectionString = Environment.GetEnvironmentVariable("SQL_CONNECTION_STRING");
+if (!string.IsNullOrEmpty(sqlConnectionString))
+{
+    builder.Configuration["ConnectionStrings:Default"] = sqlConnectionString;
+}
+
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
@@ -56,6 +80,33 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+//
+// JWT Authentication
+//
+var jwtSettings = builder.Configuration.GetSection(JwtOptions.SectionName);
+var secretKey = jwtSettings["SecretKey"];
+
+builder.Services.AddAuthorization();
+
+if (!string.IsNullOrEmpty(secretKey))
+{
+    builder.Services.AddAuthentication(defaultScheme: JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = jwtSettings["Issuer"],
+                ValidAudience = jwtSettings["Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(secretKey))
+            };
+        });
+}
 
 //
 // Validators
@@ -100,6 +151,19 @@ builder.Services.Configure<SummaryOptions>(
 builder.Services.Configure<OcrOptions>(
     builder.Configuration.GetSection(OcrOptions.SectionName));
 
+builder.Services.Configure<AesOptions>(
+    builder.Configuration.GetSection(AesOptions.SectionName));
+
+builder.Services.Configure<ConnectionStringsOptions>(
+    builder.Configuration.GetSection(ConnectionStringsOptions.SectionName));
+
+//
+// Multi-tenant
+//
+builder.Services.AddScoped<ITenantContext, HttpTenantContext>();
+builder.Services.AddScoped<ITenantProviderRepository, TenantProviderRepository>();
+builder.Services.AddScoped<IAesEncryptionService, AesEncryptionService>();
+
 builder.Services.AddScoped<IStreamingTextGenerator,
     SemanticKernelStreamingTextGenerator>();
 
@@ -116,6 +180,7 @@ builder.Services.AddScoped<ISseStreamWriter, SseStreamWriter>();
 // Use Cases
 //
 builder.Services.AddScoped<SummarizeDocumentUseCase>();
+builder.Services.AddScoped<ConfigureTenantProviderUseCase>();
 
 //
 // Swagger
@@ -148,6 +213,12 @@ app.UseSerilogRequestLogging();
 
 app.UseCors();
 
+if (!string.IsNullOrEmpty(secretKey))
+{
+    app.UseAuthentication();
+}
+app.UseAuthorization();
+
 //
 // Swagger
 //
@@ -162,6 +233,7 @@ if (app.Environment.IsDevelopment())
 // Endpoints
 //
 app.MapSummaryEndpoints();
+app.MapAdminEndpoints();
 
 try
 {

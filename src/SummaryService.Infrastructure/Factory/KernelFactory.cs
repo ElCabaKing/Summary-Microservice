@@ -12,13 +12,18 @@ public sealed class KernelFactory(
 
     public Kernel Create(
         string provider,
-        string model)
+        string model,
+        string? apiKey = null)
     {
         if (!_options.Providers.TryGetValue(provider, out var config))
         {
             throw new InvalidOperationException(
                 $"Provider '{provider}' not configured");
         }
+
+        var resolvedKey = apiKey ?? config.ApiKey
+            ?? throw new InvalidOperationException(
+                $"No API key available for provider '{provider}'");
 
         var builder = Kernel.CreateBuilder();
 
@@ -29,7 +34,7 @@ public sealed class KernelFactory(
 
                 builder.AddOpenAIChatCompletion(
                     modelId: model,
-                    apiKey: config.ApiKey!,
+                    apiKey: resolvedKey,
                     endpoint: new Uri(config.Endpoint));
 
                 break;

@@ -12,4 +12,13 @@ public interface ITenantProviderRepository
     Task AddProviderAsync(
         TenantProvider tenantProvider,
         CancellationToken ct);
+
+    Task<IEnumerable<TenantProvider>> GetAllProvidersAsync(
+        string tenantId,
+        CancellationToken ct);
+
+    Task DeleteProviderAsync(
+        string tenantId,
+        string provider,
+        CancellationToken ct);
 }

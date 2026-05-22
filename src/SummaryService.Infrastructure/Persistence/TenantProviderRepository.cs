@@ -69,4 +69,47 @@ public sealed class TenantProviderRepository(
                 },
                 cancellationToken: ct));
     }
+
+    public async Task<IEnumerable<TenantProvider>> GetAllProvidersAsync(
+        string tenantId,
+        CancellationToken ct)
+    {
+        await using var conn = new SqlConnection(connectionStrings.Value.Default);
+
+        return await conn.QueryAsync<TenantProvider>(
+            new CommandDefinition(
+                """
+                SELECT
+                    Id,
+                    TenantId,
+                    Provider,
+                    EncryptedApiKey,
+                    IsActive,
+                    CreatedAt,
+                    UpdatedAt
+                FROM TenantProviders
+                WHERE TenantId = @TenantId
+                ORDER BY Provider
+                """,
+                new { TenantId = tenantId },
+                cancellationToken: ct));
+    }
+
+    public async Task DeleteProviderAsync(
+        string tenantId,
+        string provider,
+        CancellationToken ct)
+    {
+        await using var conn = new SqlConnection(connectionStrings.Value.Default);
+
+        await conn.ExecuteAsync(
+            new CommandDefinition(
+                """
+                DELETE FROM TenantProviders
+                WHERE TenantId = @TenantId
+                  AND Provider = @Provider
+                """,
+                new { TenantId = tenantId, Provider = provider },
+                cancellationToken: ct));
+    }
 }

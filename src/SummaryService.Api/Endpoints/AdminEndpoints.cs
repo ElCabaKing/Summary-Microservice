@@ -27,5 +27,46 @@ public static class AdminEndpoints
         .WithName("ConfigureTenantProvider")
         .DisableAntiforgery()
         .RequireAuthorization();
+
+        app.MapGet("/api/v1/admin/tenants/{tenantId}/providers", async (
+            string tenantId,
+            ITenantProviderRepository repo,
+            ITenantContext tenantContext,
+            CancellationToken ct) =>
+        {
+            if (tenantContext.Role != "admin")
+                return Results.Forbid();
+
+            var providers = await repo.GetAllProvidersAsync(tenantId, ct);
+
+            return Results.Ok(providers.Select(p => new
+            {
+                p.Provider,
+                p.IsActive,
+                p.CreatedAt,
+                p.UpdatedAt
+            }));
+        })
+        .WithName("ListTenantProviders")
+        .DisableAntiforgery()
+        .RequireAuthorization();
+
+        app.MapDelete("/api/v1/admin/tenants/{tenantId}/providers/{provider}", async (
+            string tenantId,
+            string provider,
+            ITenantProviderRepository repo,
+            ITenantContext tenantContext,
+            CancellationToken ct) =>
+        {
+            if (tenantContext.Role != "admin")
+                return Results.Forbid();
+
+            await repo.DeleteProviderAsync(tenantId, provider, ct);
+
+            return Results.Ok(new { message = $"Provider '{provider}' eliminado" });
+        })
+        .WithName("DeleteTenantProvider")
+        .DisableAntiforgery()
+        .RequireAuthorization();
     }
 }

@@ -1,8 +1,6 @@
-using System.Text;
 using FluentValidation;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using SummaryService.Api.Authentication;
 using SummaryService.Api.Endpoints;
 using SummaryService.Api.Middleware;
 using SummaryService.Application.Interfaces;
@@ -17,33 +15,12 @@ using SummaryService.Infrastructure.Llm.Options;
 using SummaryService.Infrastructure.Pdf;
 using SummaryService.Infrastructure.Persistence;
 using SummaryService.Infrastructure.Sse;
-using System.IdentityModel.Tokens.Jwt;
 
 DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Ensure environment variables are loaded into configuration
 builder.Configuration.AddEnvironmentVariables();
-
-// Map environment variables to configuration
-var groqApiKey = Environment.GetEnvironmentVariable("GROQ_API_KEY");
-if (!string.IsNullOrEmpty(groqApiKey))
-{
-    builder.Configuration["AI:Providers:groq:ApiKey"] = groqApiKey;
-}
-
-var geminiApiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
-if (!string.IsNullOrEmpty(geminiApiKey))
-{
-    builder.Configuration["AI:Providers:gemini:ApiKey"] = geminiApiKey;
-}
-
-var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
-if (!string.IsNullOrEmpty(jwtSecret))
-{
-    builder.Configuration["Jwt:SecretKey"] = jwtSecret;
-}
 
 var aesKey = Environment.GetEnvironmentVariable("AES_KEY");
 if (!string.IsNullOrEmpty(aesKey))
@@ -66,41 +43,14 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 //
-// JWT Authentication
+// API Key Authentication
 //
-JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-
-var jwtSettings = builder.Configuration.GetSection(JwtOptions.SectionName);
-var secretKey = jwtSettings["SecretKey"];
-
-Console.WriteLine("JWT Secret Key: " + secretKey);
+builder.Services
+    .AddAuthentication(ApiKeyDefaults.AuthenticationScheme)
+    .AddScheme<ApiKeyAuthOptions, ApiKeyAuthHandler>(
+        ApiKeyDefaults.AuthenticationScheme, null);
 
 builder.Services.AddAuthorization();
-
-if (!string.IsNullOrWhiteSpace(secretKey))
-{
-    builder.Services
-        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
-        {
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-
-                ValidIssuer = jwtSettings["Issuer"],
-                ValidAudience = jwtSettings["Audience"],
-
-                IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(secretKey)),
-
-                RoleClaimType = "role",
-                NameClaimType = "name"
-            };
-        });
-}
 
 //
 // Validators
@@ -156,6 +106,7 @@ builder.Services.Configure<ConnectionStringsOptions>(
 //
 builder.Services.AddScoped<ITenantContext, HttpTenantContext>();
 builder.Services.AddScoped<ITenantProviderRepository, TenantProviderRepository>();
+builder.Services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
 builder.Services.AddScoped<IAesEncryptionService, AesEncryptionService>();
 
 builder.Services.AddScoped<IStreamingTextGenerator,
@@ -175,6 +126,7 @@ builder.Services.AddScoped<ISseStreamWriter, SseStreamWriter>();
 //
 builder.Services.AddScoped<SummarizeDocumentUseCase>();
 builder.Services.AddScoped<ConfigureTenantProviderUseCase>();
+builder.Services.AddScoped<CreateApiKeyUseCase>();
 
 //
 // Swagger
@@ -207,10 +159,7 @@ app.UseSerilogRequestLogging();
 
 app.UseCors();
 
-if (!string.IsNullOrEmpty(secretKey))
-{
-    app.UseAuthentication();
-}
+app.UseAuthentication();
 app.UseAuthorization();
 
 //
@@ -228,6 +177,7 @@ if (app.Environment.IsDevelopment())
 //
 app.MapSummaryEndpoints();
 app.MapAdminEndpoints();
+app.MapApiKeyEndpoints();
 
 try
 {

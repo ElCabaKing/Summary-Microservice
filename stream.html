@@ -413,29 +413,50 @@
     <h1>Resumen por Streaming</h1>
     <p>Subí un PDF o TXT y recibí el resumen en tiempo real via SSE.</p>
 
-    <!-- JWT Section -->
+    <!-- API Key Section -->
     <div class="section">
       <div class="section-header">
-        <h3>🔑 JWT Token</h3>
+        <h3>🔑 API Key</h3>
         <div>
-          <button class="btn-sm btn-outline" id="btnClearJwt" style="display:none">🗑 Limpiar</button>
+          <button class="btn-sm btn-outline" id="btnClearApiKey" style="display:none">🗑 Limpiar</button>
         </div>
       </div>
       <div class="form-group">
-        <textarea id="jwtTextarea" placeholder="Pegá acá el JWT token..."></textarea>
+        <input type="text" id="apiKeyInput" placeholder="sk_live_...">
       </div>
       <div style="display:flex;gap:.5rem;margin-top:.5rem">
-        <button class="btn-primary btn-sm" id="btnSaveJwt" style="width:auto">Guardar Token</button>
+        <button class="btn-primary btn-sm" id="btnSaveApiKey" style="width:auto">Guardar API Key</button>
+        <button class="btn-success btn-sm" id="btnGenerateApiKey" style="width:auto;display:none">+ Generar API Key</button>
       </div>
-      <div class="badge-group" id="jwtBadges" style="display:none">
+      <div class="badge-group" id="keyBadges" style="display:none">
         <span class="badge badge-tenant" id="tenantBadge">Tenant: —</span>
         <span class="badge badge-role" id="roleBadge">Role: —</span>
-        <span class="badge badge-active" id="expBadge" style="display:none">Válido</span>
-        <span class="badge badge-inactive" id="expiredBadge" style="display:none">Expirado</span>
       </div>
     </div>
 
-    <!-- Admin Section -->
+    <!-- Admin Generate API Key Section (hidden by default) -->
+    <div class="section" id="genKeySection" style="display:none">
+      <div class="section-header">
+        <h3>🔐 Generar API Key para tenant</h3>
+      </div>
+      <div class="section-body" id="genKeyBody">
+        <div class="form-group" style="margin-bottom:.75rem">
+          <label for="genTenantId">Tenant ID</label>
+          <input type="text" id="genTenantId" placeholder="tenant-alpha">
+        </div>
+        <div class="form-group">
+          <label for="genRole">Rol</label>
+          <select id="genRole">
+            <option value="user">user</option>
+            <option value="admin">admin</option>
+          </select>
+        </div>
+        <button class="btn-success" id="btnCreateApiKey" style="margin-top:.75rem">Generar</button>
+        <div class="result-msg" id="genKeyResult"></div>
+      </div>
+    </div>
+
+    <!-- Admin Provider Section -->
     <div class="section" id="adminSection" style="display:none">
       <div class="section-header" id="adminToggle">
         <h3>⚙️ Configurar Provider (admin)</h3>
@@ -454,7 +475,7 @@
           </select>
         </div>
         <div class="form-group" style="margin-top:.75rem">
-          <label for="adminApiKey">API Key</label>
+          <label for="adminApiKey">API Key del provider</label>
           <input type="password" id="adminApiKey" placeholder="gsk_...">
         </div>
         <button class="btn-success" id="btnSaveConfig">Guardar Configuración</button>
@@ -550,15 +571,20 @@
     };
 
     // DOM refs
-    const jwtTextarea = document.getElementById('jwtTextarea');
-    const btnSaveJwt = document.getElementById('btnSaveJwt');
-    const btnClearJwt = document.getElementById('btnClearJwt');
-    const jwtBadges = document.getElementById('jwtBadges');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const btnSaveApiKey = document.getElementById('btnSaveApiKey');
+    const btnClearApiKey = document.getElementById('btnClearApiKey');
+    const btnGenerateApiKey = document.getElementById('btnGenerateApiKey');
+    const keyBadges = document.getElementById('keyBadges');
     const tenantBadge = document.getElementById('tenantBadge');
     const roleBadge = document.getElementById('roleBadge');
-    const expBadge = document.getElementById('expBadge');
-    const expiredBadge = document.getElementById('expiredBadge');
     const activeTenantDisplay = document.getElementById('activeTenantDisplay');
+
+    const genKeySection = document.getElementById('genKeySection');
+    const genTenantId = document.getElementById('genTenantId');
+    const genRole = document.getElementById('genRole');
+    const btnCreateApiKey = document.getElementById('btnCreateApiKey');
+    const genKeyResult = document.getElementById('genKeyResult');
 
     const adminSection = document.getElementById('adminSection');
     const adminToggle = document.getElementById('adminToggle');
@@ -566,7 +592,6 @@
     const adminBody = document.getElementById('adminBody');
     const adminTenantId = document.getElementById('adminTenantId');
     const adminProvider = document.getElementById('adminProvider');
-    const adminModel = document.getElementById('adminModel');
     const adminApiKey = document.getElementById('adminApiKey');
     const btnSaveConfig = document.getElementById('btnSaveConfig');
     const adminResult = document.getElementById('adminResult');
@@ -590,108 +615,113 @@
 
     let selectedFile = null;
     let abortController = null;
-    let jwtToken = null;
+    let apiKeyToken = null;
 
-    // ── JWT helpers ──
+    // ── API Key helpers ──
 
-    function decodeJwt(token) {
-      try {
-        const payload = token.split('.')[1];
-        const json = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-        return json;
-      } catch {
-        return null;
-      }
-    }
-
-    function isTokenExpired(payload) {
-      if (!payload || !payload.exp) return true;
-      return Date.now() >= payload.exp * 1000;
+    function decodeApiKeyPrefix(prefix) {
+      // The key format is sk_live_<64hex> 
+      // We can't decode claims from the key itself (it's opaque/hashed)
+      // Claims come from the server response on auth
+      return null;
     }
 
     // ── UI updates ──
 
-    function updateJwtUI() {
-      const token = localStorage.getItem('jwtToken');
-      jwtToken = token || null;
-      jwtTextarea.value = token || '';
+    function updateUI() {
+      const token = localStorage.getItem('apiKey');
+      apiKeyToken = token || null;
+      apiKeyInput.value = token || '';
 
       if (!token) {
-        jwtBadges.style.display = 'none';
-        btnClearJwt.style.display = 'none';
+        keyBadges.style.display = 'none';
+        btnClearApiKey.style.display = 'none';
+        btnGenerateApiKey.style.display = 'none';
+        genKeySection.style.display = 'none';
         adminSection.style.display = 'none';
         activeTenantDisplay.textContent = '—';
         btnSend.disabled = true;
         return;
       }
 
-      const payload = decodeJwt(token);
-      if (!payload) {
-        jwtBadges.style.display = 'flex';
-        tenantBadge.textContent = 'Token inválido';
-        roleBadge.textContent = '';
-        expBadge.style.display = 'none';
-        expiredBadge.style.display = 'none';
-        btnClearJwt.style.display = 'inline-block';
-        adminSection.style.display = 'none';
-        activeTenantDisplay.textContent = 'Token inválido';
-        btnSend.disabled = true;
-        return;
-      }
+      // Try to decode prefix for display (just show first 16 chars)
+      const preview = token.length > 16 ? token.substring(0, 16) + '...' : token;
+      tenantBadge.textContent = `Key: ${preview}`;
+      roleBadge.textContent = 'Role: ?';
 
-      const tenantId = payload.tenant_id || '—';
-      const role = payload.role || '—';
-      const expired = isTokenExpired(payload);
-
-      jwtBadges.style.display = 'flex';
-      tenantBadge.textContent = `Tenant: ${tenantId}`;
-      roleBadge.textContent = `Role: ${role}`;
-
-      if (expired) {
-        expBadge.style.display = 'none';
-        expiredBadge.style.display = 'inline-block';
-      } else {
-        expBadge.style.display = 'inline-block';
-        expiredBadge.style.display = 'none';
-      }
-
-      btnClearJwt.style.display = 'inline-block';
-      activeTenantDisplay.textContent = expired ? `${tenantId} (expirado)` : tenantId;
-
-      // Admin section
-      if (role === 'admin' && !expired) {
-        adminSection.style.display = 'block';
-        adminTenantId.value = tenantId !== '—' ? tenantId : '';
-      } else {
-        adminSection.style.display = 'none';
-      }
-
-      // Send button
-      btnSend.disabled = !selectedFile || !token || expired;
+      keyBadges.style.display = 'flex';
+      btnClearApiKey.style.display = 'inline-block';
+      btnGenerateApiKey.style.display = 'inline-block';
+      activeTenantDisplay.textContent = 'Autenticado';
+      btnSend.disabled = !selectedFile;
     }
 
-    function saveJwt() {
-      const token = jwtTextarea.value.trim();
+    function saveApiKey() {
+      const token = apiKeyInput.value.trim();
       if (!token) return;
 
-      const payload = decodeJwt(token);
-      if (!payload) {
-        addLog('info', 'Token JWT inválido (no se pudo decodificar)');
+      if (!token.startsWith('sk_live_')) {
+        addLog('info', 'La API Key debería empezar con sk_live_');
+      }
+
+      localStorage.setItem('apiKey', token);
+      addLog('info', 'API Key guardada');
+      updateUI();
+    }
+
+    function clearApiKey() {
+      localStorage.removeItem('apiKey');
+      apiKeyToken = null;
+      apiKeyInput.value = '';
+      addLog('info', 'API Key eliminada');
+      updateUI();
+    }
+
+    // ── Generate API Key ──
+
+    btnCreateApiKey.addEventListener('click', async () => {
+      const tenantId = genTenantId.value.trim();
+      const role = genRole.value;
+
+      if (!tenantId) {
+        genKeyResult.className = 'result-msg error';
+        genKeyResult.textContent = 'Completá el Tenant ID';
+        genKeyResult.style.display = 'block';
         return;
       }
 
-      localStorage.setItem('jwtToken', token);
-      addLog('info', `JWT guardado — Tenant: ${payload.tenant_id || '?'}, Role: ${payload.role || '?'}`);
-      updateJwtUI();
-    }
+      btnCreateApiKey.disabled = true;
+      btnCreateApiKey.textContent = 'Generando...';
 
-    function clearJwt() {
-      localStorage.removeItem('jwtToken');
-      jwtToken = null;
-      jwtTextarea.value = '';
-      addLog('info', 'Token JWT eliminado');
-      updateJwtUI();
-    }
+      try {
+        const res = await fetch(`${BASE_API_URL}/admin/apikeys`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKeyToken}`
+          },
+          body: JSON.stringify({ tenantId, role })
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`HTTP ${res.status}: ${text}`);
+        }
+
+        const data = await res.json();
+        genKeyResult.className = 'result-msg success';
+        genKeyResult.textContent = `✓ API Key generada: ${data.apiKey}`;
+        genKeyResult.style.display = 'block';
+        addLog('info', `API Key generada para tenant ${data.tenantId}, role ${data.role}`);
+      } catch (err) {
+        genKeyResult.className = 'result-msg error';
+        genKeyResult.textContent = `Error: ${err.message}`;
+        genKeyResult.style.display = 'block';
+      } finally {
+        btnCreateApiKey.disabled = false;
+        btnCreateApiKey.textContent = 'Generar';
+      }
+    });
 
     // ── Admin ──
 
@@ -715,7 +745,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
+            'Authorization': `Bearer ${apiKeyToken}`
           },
           body: JSON.stringify({ provider, apiKey })
         });
@@ -770,12 +800,12 @@
       temperatureValue.textContent = parseFloat(temperatureRange.value).toFixed(1);
     });
 
-    function updateUI() {
+    function updateSendButton() {
       const hasFile = selectedFile !== null;
       dropZone.classList.toggle('has-file', hasFile);
       fileName.textContent = hasFile ? selectedFile.name : '';
-      const hasJwt = jwtToken && !isTokenExpired(decodeJwt(jwtToken));
-      btnSend.disabled = !hasFile || !hasJwt;
+      const hasKey = !!apiKeyToken;
+      btnSend.disabled = !hasFile || !hasKey;
     }
 
     dropZone.addEventListener('click', () => fileInput.click());
@@ -800,7 +830,7 @@
 
     function setFile(file) {
       selectedFile = file;
-      updateUI();
+      updateSendButton();
     }
 
     function addLog(event, data) {
@@ -831,7 +861,7 @@
     });
 
     btnSend.addEventListener('click', async () => {
-      if (!selectedFile || !jwtToken) return;
+      if (!selectedFile || !apiKeyToken) return;
 
       summaryOutput.classList.remove('visible');
       summaryContent.textContent = '';
@@ -841,14 +871,12 @@
       btnSend.disabled = true;
       btnCancel.disabled = false;
 
-      const payload = decodeJwt(jwtToken);
-      const tenantId = payload?.tenant_id || '?';
       const temperature = parseFloat(temperatureRange.value);
       const maxTokens = maxTokensInput.value
         ? parseInt(maxTokensInput.value, 10)
         : '';
 
-      addLog('info', `Tenant: ${tenantId}, Provider: ${providerSelect.options[providerSelect.selectedIndex].text}, Modelo: ${modelSelect.options[modelSelect.selectedIndex].text}${maxTokens ? `, MaxTokens: ${maxTokens}` : ''}`);
+      addLog('info', `Provider: ${providerSelect.options[providerSelect.selectedIndex].text}, Modelo: ${modelSelect.options[modelSelect.selectedIndex].text}${maxTokens ? `, MaxTokens: ${maxTokens}` : ''}`);
 
       abortController = new AbortController();
 
@@ -865,7 +893,7 @@
         const response = await fetch(STREAM_API_URL, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${jwtToken}`
+            'Authorization': `Bearer ${apiKeyToken}`
           },
           body: formData,
           signal: abortController.signal,
@@ -961,20 +989,24 @@
       }
     });
 
-    // ── JWT event listeners ──
+    // ── API Key event listeners ──
 
-    btnSaveJwt.addEventListener('click', saveJwt);
+    btnSaveApiKey.addEventListener('click', saveApiKey);
 
-    jwtTextarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.ctrlKey) saveJwt();
+    apiKeyInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') saveApiKey();
     });
 
-    btnClearJwt.addEventListener('click', clearJwt);
+    btnClearApiKey.addEventListener('click', clearApiKey);
+
+    btnGenerateApiKey.addEventListener('click', () => {
+      genKeySection.style.display = genKeySection.style.display === 'none' ? 'block' : 'none';
+    });
 
     // ── Init ──
 
     updateModels();
-    updateJwtUI();
+    updateUI();
   </script>
 </body>
 

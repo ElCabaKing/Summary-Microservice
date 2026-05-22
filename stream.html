@@ -446,18 +446,12 @@
           <label for="adminTenantId">Tenant ID</label>
           <input type="text" id="adminTenantId" placeholder="tenant-alpha">
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="adminProvider">Provider</label>
-            <select id="adminProvider">
-              <option value="groq">Groq</option>
-              <option value="gemini">Gemini</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="adminModel">Modelo</label>
-            <input type="text" id="adminModel" placeholder="llama-3.3-70b-versatile">
-          </div>
+        <div class="form-group">
+          <label for="adminProvider">Provider</label>
+          <select id="adminProvider">
+            <option value="groq">Groq</option>
+            <option value="gemini">Gemini</option>
+          </select>
         </div>
         <div class="form-group" style="margin-top:.75rem">
           <label for="adminApiKey">API Key</label>
@@ -704,10 +698,9 @@
     btnSaveConfig.addEventListener('click', async () => {
       const tenantId = adminTenantId.value.trim();
       const provider = adminProvider.value;
-      const model = adminModel.value.trim();
       const apiKey = adminApiKey.value.trim();
 
-      if (!tenantId || !model || !apiKey) {
+      if (!tenantId || !apiKey) {
         adminResult.className = 'result-msg error';
         adminResult.textContent = 'Completá todos los campos';
         adminResult.style.display = 'block';
@@ -724,7 +717,7 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${jwtToken}`
           },
-          body: JSON.stringify({ provider, model, apiKey })
+          body: JSON.stringify({ provider, apiKey })
         });
 
         if (!res.ok) {

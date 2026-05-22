@@ -17,25 +17,9 @@ using SummaryService.Infrastructure.Llm.Options;
 using SummaryService.Infrastructure.Pdf;
 using SummaryService.Infrastructure.Persistence;
 using SummaryService.Infrastructure.Sse;
+using System.IdentityModel.Tokens.Jwt;
 
-// Load .env file
-var envFile = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".env");
-if (File.Exists(envFile))
-{
-    foreach (var line in File.ReadAllLines(envFile))
-    {
-        if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
-            continue;
-
-        var parts = line.Split('=', StringSplitOptions.None);
-        if (parts.Length == 2)
-        {
-            var key = parts[0].Trim();
-            var value = parts[1].Trim();
-            Environment.SetEnvironmentVariable(key, value);
-        }
-    }
-}
+DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -84,14 +68,19 @@ builder.Host.UseSerilog();
 //
 // JWT Authentication
 //
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
 var jwtSettings = builder.Configuration.GetSection(JwtOptions.SectionName);
 var secretKey = jwtSettings["SecretKey"];
 
+Console.WriteLine("JWT Secret Key: " + secretKey);
+
 builder.Services.AddAuthorization();
 
-if (!string.IsNullOrEmpty(secretKey))
+if (!string.IsNullOrWhiteSpace(secretKey))
 {
-    builder.Services.AddAuthentication(defaultScheme: JwtBearerDefaults.AuthenticationScheme)
+    builder.Services
+        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters
@@ -100,10 +89,15 @@ if (!string.IsNullOrEmpty(secretKey))
                 ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
+
                 ValidIssuer = jwtSettings["Issuer"],
                 ValidAudience = jwtSettings["Audience"],
+
                 IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(secretKey))
+                    Encoding.UTF8.GetBytes(secretKey)),
+
+                RoleClaimType = "role",
+                NameClaimType = "name"
             };
         });
 }

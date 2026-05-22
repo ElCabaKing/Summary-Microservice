@@ -23,7 +23,6 @@ public sealed class ConfigureTenantProviderUseCase(
                 Id = Guid.NewGuid(),
                 TenantId = tenantId,
                 Provider = request.Provider,
-                Model = request.Model,
                 EncryptedApiKey = encryptedKey,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow

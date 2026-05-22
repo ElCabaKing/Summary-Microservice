@@ -25,9 +25,7 @@ public sealed class TenantProviderRepository(
                     Id,
                     TenantId,
                     Provider,
-                    Model,
                     EncryptedApiKey,
-                    Endpoint,
                     IsActive,
                     CreatedAt,
                     UpdatedAt
@@ -54,23 +52,19 @@ public sealed class TenantProviderRepository(
                 ON target.TenantId = source.TenantId AND target.Provider = source.Provider
                 WHEN MATCHED THEN
                     UPDATE SET
-                        Model = @Model,
                         EncryptedApiKey = @EncryptedApiKey,
-                        Endpoint = @Endpoint,
                         IsActive = @IsActive,
                         UpdatedAt = SYSUTCDATETIME()
                 WHEN NOT MATCHED THEN
-                    INSERT (Id, TenantId, Provider, Model, EncryptedApiKey, Endpoint, IsActive, CreatedAt)
-                    VALUES (@Id, @TenantId, @Provider, @Model, @EncryptedApiKey, @Endpoint, @IsActive, SYSUTCDATETIME());
+                    INSERT (Id, TenantId, Provider, EncryptedApiKey, IsActive, CreatedAt)
+                    VALUES (@Id, @TenantId, @Provider, @EncryptedApiKey, @IsActive, SYSUTCDATETIME());
                 """,
                 new
                 {
                     tenantProvider.Id,
                     tenantProvider.TenantId,
                     tenantProvider.Provider,
-                    tenantProvider.Model,
                     tenantProvider.EncryptedApiKey,
-                    Endpoint = (string?)null,
                     tenantProvider.IsActive
                 },
                 cancellationToken: ct));

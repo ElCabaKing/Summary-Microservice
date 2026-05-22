@@ -1,8 +1,10 @@
 using SummaryService.Application.Interfaces;
+using System.Security.Claims;
 
 namespace SummaryService.Api.Middleware;
 
-public sealed class HttpTenantContext(IHttpContextAccessor httpContextAccessor) : ITenantContext
+public sealed class HttpTenantContext(IHttpContextAccessor httpContextAccessor)
+    : ITenantContext
 {
     public string? TenantId =>
         httpContextAccessor.HttpContext?.User
@@ -10,5 +12,5 @@ public sealed class HttpTenantContext(IHttpContextAccessor httpContextAccessor) 
 
     public string? Role =>
         httpContextAccessor.HttpContext?.User
-            .FindFirst("role")?.Value;
+            .FindFirst(ClaimTypes.Role)?.Value;
 }

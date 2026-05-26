@@ -15,17 +15,13 @@ Ubicado en la raíz del proyecto. Ya incluye valores por defecto pero podés mod
 ```bash
 GROQ_API_KEY=gsk_tu_key_aqui
 GEMINI_API_KEY=AIza_tu_key_aqui
-JWT_SECRET=supersecreto-jwt-para-firmar-tokens-2024
-AES_KEY=5e884898da28047151d0e56f8dc62927
 SQL_CONNECTION_STRING=Server=localhost,1433;Database=SummaryService;User Id=sa;Password=SummarySrv2024!;TrustServerCertificate=True
 ```
 
 | Variable | Descripción |
 |---|---|
-| `GROQ_API_KEY` | API key de Groq (fallback global) |
-| `GEMINI_API_KEY` | API key de Gemini (fallback global) |
-| `JWT_SECRET` | Clave secreta para firmar/validar JWTs |
-| `AES_KEY` | Hex string de 32 caracteres (16 bytes) para encriptar API keys en BD |
+| `GROQ_API_KEY` | API key de Groq |
+| `GEMINI_API_KEY` | API key de Gemini |
 | `SQL_CONNECTION_STRING` | Connection string a SQL Server |
 
 > ⚠️ El `.env` está en `.gitignore` y `.dockerignore` — no se sube al repo.
@@ -51,9 +47,9 @@ docker compose ps
 
 ## 3. Inicializar la base de datos
 
-El script SQL está en `src/SummaryService.Infrastructure/Persistence/Scripts/init.sql`.
+El script SQL está en `Scripts/init.sql`.
 
-Podés conectarte con cualquier cliente SQL (Azure Data Studio, SSMS, `sqlcmd`) o directamente con Docker:
+Podés conectarte con cualquier cliente SQL o directamente con Docker:
 
 ```bash
 docker exec -i summary-sqlserver /opt/mssql-tools18/bin/sqlcmd \
@@ -62,9 +58,13 @@ docker exec -i summary-sqlserver /opt/mssql-tools18/bin/sqlcmd \
   -i /scripts/init.sql
 ```
 
-> El contenedor monta la carpeta `./src/SummaryService.Infrastructure/Persistence/Scripts` en `/scripts/`.
+> El contenedor monta la carpeta `./Scripts` en `/scripts/` si configuraste el volumen en `docker-compose.yml`.
 
-Esto crea la base `SummaryService` y la tabla `TenantProviders`.
+Esto crea:
+- Base `SummaryService`
+- Tabla `Clients` (empresas registradas)
+- Tabla `ApiKeys` (hashes de API keys)
+- **Admin key** de bootstrap: `smm_adminadmin8c0013772288e07a80a60b5775e2304840376e93038336325feb5c79af0e67c7`
 
 ---
 
@@ -81,97 +81,94 @@ Endpoints:
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
 | `GET` | `/health` | ❌ | Health check |
-| `POST` | `/api/v1/summaries/stream` | ✅ JWT | Subir PDF/TXT y recibir resumen via SSE |
-| `POST` | `/api/v1/admin/tenants/{tenantId}/providers` | ✅ JWT + admin | Configurar provider IA para un tenant |
+| `POST` | `/api/v1/summaries/stream` | ✅ API Key | Subir PDF/TXT y recibir resumen via SSE |
+| `POST` | `/api/v1/admin/apikeys` | ✅ Admin key | Registrar un cliente y generar API key |
+| `PUT` | `/api/v1/admin/apikeys/regenerate` | ✅ Admin key | Regenerar API key de un tenant |
 
 ---
 
-## 5. Generar un JWT de prueba
+## 5. Autenticación con API Keys
 
-El microservicio valida el JWT pero no lo emite. Necesitás generarlo externamente.
+No se usan JWTs. Cada request autenticado debe incluir:
 
-### Opción A: Con `jose` (Node.js)
+```
+Authorization: Bearer <api-key>
+```
+
+El formato de las API keys es:
+
+```
+smm_ + 10-char-prefix + 64-hex-chars (256 bits)
+Ejemplo: smm_adminadmin8c0013772288e07a80a60b5775e2304840376e93038336325feb5c79af0e67c7
+```
+
+### Admin key de bootstrap
+
+La key de admin viene insertada por `init.sql`:
+
+```
+smm_adminadmin8c0013772288e07a80a60b5775e2304840376e93038336325feb5c79af0e67c7
+```
+
+Usala para registar clientes y administrar el sistema.
+
+---
+
+## 6. Registrar un cliente (admin)
 
 ```bash
-npx jose new-sign \
-  --key "supersecreto-jwt-para-firmar-tokens-2024" \
-  --alg HS256 \
-  --payload '{"tenant_id":"tenant-alpha","role":"admin","sub":"test-user"}' \
-  --exp 24h
+KEY="smm_adminadmin8c0013772288e07a80a60b5775e2304840376e93038336325feb5c79af0e67c7"
+
+curl -X POST http://localhost:5171/api/v1/admin/apikeys \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "companyName": "Mi Empresa S.A.",
+    "email": "admin@miempresa.com",
+    "contactName": "Juan Pérez"
+  }'
 ```
 
-### Opción B: Con Python
-
-```python
-import jwt, datetime
-
-payload = {
-    "tenant_id": "tenant-alpha",
-    "role": "admin",
-    "sub": "test-user",
-    "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)
-}
-token = jwt.encode(payload, "supersecreto-jwt-para-firmar-tokens-2024", algorithm="HS256")
-print(token)
-```
-
-### Opción C: Con jwt.io
-
-1. Andá a [jwt.io](https://jwt.io)
-2. En **Payload** pegá:
+Respuesta:
 
 ```json
 {
-  "tenant_id": "tenant-alpha",
-  "role": "admin",
-  "sub": "test-user"
+  "apiKey": "smm_a3b2c1d9e0...",
+  "tenantId": "tenant_1",
+  "companyName": "Mi Empresa S.A."
 }
 ```
 
-3. En **VERIFY SIGNATURE** seleccioná algoritmo `HS256` y pegá `supersecreto-jwt-para-firmar-tokens-2024` como secret
-4. Copiá el token generado
+> La API key del cliente se muestra **una sola vez**. Guardala.
 
 ---
 
-## 6. Usar la interfaz web
+## 7. Usar la interfaz web
 
 Abrí `stream.html` en el navegador (no necesita servidor, funciona directo desde el explorador de archivos).
 
 ### Pasos:
 
-1. **Pegá el JWT** en el campo de texto y presioná _Guardar Token_
-2. Verificá que aparezcan los badges **Tenant** y **Role**
-3. _(opcional, solo admin)_ Expandí la sección **Configurar Provider** y guardá una API key para tu tenant
+1. **API Key** — el campo viene precargado con la admin key de bootstrap
+2. **Quick-select** — clickeá `adminadmin` o `tenant_1`, `tenant_2`... para cambiar de key
+3. **Registrar cliente** — si estás usando la admin key, aparecerá el botón `📋 Registrar Cliente`
 4. **Arrastrá o seleccioná** un PDF/TXT
 5. Elegí **Provider**, **Modelo**, **Temperatura** y **Max Tokens**
 6. Presioná **Enviar** y observá el resumen en vivo via SSE
 
-> Si el JWT expiró, el botón _Enviar_ se deshabilita. Generá uno nuevo y guardalo.
+> Las keys se guardan automáticamente en `localStorage`. Al registrar un cliente desde la UI, su key se agrega automáticamente a los botones de quick-select.
 
 ---
 
-## 7. Probar con curl (sin interfaz web)
-
-### Configurar provider (admin):
-
-```bash
-JWT="eyJhbGciOiJIUzI1NiIs..."
-
-curl -X POST http://localhost:5171/api/v1/admin/tenants/tenant-alpha/providers \
-  -H "Authorization: Bearer $JWT" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "provider": "groq",
-    "model": "llama-3.3-70b-versatile",
-    "apiKey": "gsk_tu_key_aqui"
-  }'
-```
+## 8. Probar con curl
 
 ### Resumir un documento:
 
 ```bash
+KEY="smm_adminadmin8c0013772288e07a80a60b5775e2304840376e93038336325feb5c79af0e67c7"
+
 curl -X POST http://localhost:5171/api/v1/summaries/stream \
-  -H "Authorization: Bearer $JWT" \
+  -H "Authorization: Bearer $KEY" \
   -F "document=@/ruta/al/documento.pdf" \
   -F "provider=groq" \
   -F "model=llama-3.3-70b-versatile"
@@ -179,44 +176,60 @@ curl -X POST http://localhost:5171/api/v1/summaries/stream \
 
 ---
 
-## 8. Arquitectura
+## 9. Arquitectura
 
 ```
 stream.html  (cliente SSE)
-     │ POST con JWT en Authorization header
+     │ POST con API Key en Authorization header
      ▼
 SummaryService.Api
   ├── Middleware/ExceptionMiddleware.cs
-  ├── Middleware/HttpTenantContext.cs     ← extrae tenant_id del JWT
-  ├── Endpoints/SummaryEndpoints.cs      ← /api/v1/summaries/stream
-  ├── Endpoints/AdminEndpoints.cs        ← admin/tenants/{id}/providers
+  ├── Middleware/HttpTenantContext.cs       ← extrae tenant_id + role de la API Key
+  ├── Authentication/ApiKeyAuthHandler.cs  ← busca por prefix, verifica SHA256
+  ├── Endpoints/SummaryEndpoints.cs        ← /api/v1/summaries/stream
+  ├── Endpoints/ApiKeyEndpoints.cs         ← /admin/apikeys, /admin/apikeys/regenerate
   │
   ├── SummaryService.Application
   │   ├── UseCases/
-  │   │   ├── SummarizeDocumentUseCase   ← resuelve API key del tenant
-  │   │   └── ConfigureTenantProviderUseCase
+  │   │   ├── SummarizeDocumentUseCase     ← orquesta resumen con AI
+  │   │   ├── RegisterClientUseCase        ← registra empresa + genera API key
+  │   │   └── RegenerateApiKeyUseCase      ← regenera key de un tenant
+  │   ├── Services/
+  │   │   ├── Prompts.cs                   ← templates de prompts (static)
+  │   │   └── TokenEstimator.cs            ← estimador de tokens (static)
   │   └── Interfaces/
-  │       ├── ITenantContext
-  │       ├── ITenantProviderRepository
-  │       └── IAesEncryptionService
+  │       ├── IApiKeyHashService
+  │       ├── IApiKeyRepository
+  │       ├── IClientRepository
+  │       └── IStreamingTextGenerator
   │
   ├── SummaryService.Infrastructure
-  │   ├── Persistence/TenantProviderRepository.cs  ← Dapper + SQL Server
-  │   ├── Encryption/AesEncryptionService.cs
-  │   └── Factory/KernelFactory.cs       ← crea Kernel con API key del tenant
+  │   ├── Persistence/
+  │   │   ├── BaseRepository.cs            ← base class con GetConnection()
+  │   │   ├── ApiKeyRepository.cs          ← Dapper + SQL Server
+  │   │   └── ClientRepository.cs          ← Dapper + SQL Server
+  │   ├── Encryption/ApiKeyHashService.cs  ← SHA256 + generación de keys
+  │   └── Factory/KernelFactory.cs         ← crea Kernel con API key del .env
   │
   └── SummaryService.Domain
-      └── Entities/TenantProvider.cs
+      ├── Entities/ApiKey.cs
+      └── Entities/Client.cs
 ```
 
 ### Flujo de datos
 
 ```
-JWT → AddJwtBearer valida firma → HttpTenantContext (tenant_id + role)
+API Key → ApiKeyAuthHandler
+  → extrae prefix (primeros 14 chars: smm_ + 10)
+  → busca en DB por prefix → obtiene candidatos
+  → verifica SHA256 hash contra cada candidato
+  → si match → ClaimsPrincipal (tenant_id + role)
+
 → SummarizeDocumentUseCase
-  → ITenantProviderRepository.GetActiveProviderAsync(tenant_id, provider)
-    → SQL Server: SELECT ... FROM TenantProviders WHERE ...
-  → IAesEncryptionService.Decrypt(encryptedApiKey)
-  → KernelFactory.Create(provider, model, decryptedApiKey)
-    → Kernel con API key del tenant → LLM → tokens → SSE → stream.html
+  → parsea documento (PDF/TXT)
+  → chunkea texto
+  → por cada chunk: llama al LLM via KernelFactory
+    → KernelFactory usa API key global del .env (GROQ_API_KEY / GEMINI_API_KEY)
+  → reduce summaries si hay múltiples chunks
+  → emite tokens via SSE → stream.html
 ```

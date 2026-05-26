@@ -1,11 +1,12 @@
 using Microsoft.Extensions.Options;
 using SummaryService.Application.Interfaces;
+using SummaryService.Application.Services;
 using SummaryService.Domain.Options;
 using Microsoft.Extensions.Logging;
 
 namespace SummaryService.Infrastructure.Chunking;
 
-public sealed class TextChunker(ITokenEstimator tokenEstimator, IOptions<ChunkingOptions> chunkingOptions, ILogger<TextChunker> logger) : ITextChunker
+public sealed class TextChunker(IOptions<ChunkingOptions> chunkingOptions, ILogger<TextChunker> logger) : ITextChunker
 {
     public IReadOnlyList<string> Chunk(string text, CancellationToken ct)
     {
@@ -24,22 +25,20 @@ public sealed class TextChunker(ITokenEstimator tokenEstimator, IOptions<Chunkin
         {
             ct.ThrowIfCancellationRequested();
 
-            // Divide large paragraphs into smaller pieces
             var subParagraphs = DivideParagraphIfNeeded(paragraph, maxTokens, ct);
 
             foreach (var subParagraph in subParagraphs)
             {
                 ct.ThrowIfCancellationRequested();
 
-                var subParaTokens = tokenEstimator.EstimateTokens(subParagraph);
-                var currentTokens = tokenEstimator.EstimateTokens(currentChunk.ToString());
+                var subParaTokens = TokenEstimator.Estimate(subParagraph);
+                var currentTokens = TokenEstimator.Estimate(currentChunk.ToString());
 
                 if (currentTokens + subParaTokens > maxTokens && currentChunk.Length > 0)
                 {
                     chunks.Add(currentChunk.ToString().Trim());
                     currentChunk.Clear();
 
-                    // Add overlap from previous chunk
                     if (chunks.Count > 0 && overlapTokens > 0)
                     {
                         var lastChunk = chunks[^1];
@@ -71,13 +70,11 @@ public sealed class TextChunker(ITokenEstimator tokenEstimator, IOptions<Chunkin
     {
         ct.ThrowIfCancellationRequested();
 
-        var paragraphTokens = tokenEstimator.EstimateTokens(paragraph);
+        var paragraphTokens = TokenEstimator.Estimate(paragraph);
 
-        // If paragraph fits within max tokens, return as-is
         if (paragraphTokens <= maxTokens)
             return [paragraph];
 
-        // First, try dividing by single line breaks
         var lines = paragraph.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         if (lines.Length > 1)
         {
@@ -88,8 +85,8 @@ public sealed class TextChunker(ITokenEstimator tokenEstimator, IOptions<Chunkin
             {
                 ct.ThrowIfCancellationRequested();
 
-                var lineTokens = tokenEstimator.EstimateTokens(line);
-                var currentTokens = tokenEstimator.EstimateTokens(currentLine.ToString());
+                var lineTokens = TokenEstimator.Estimate(line);
+                var currentTokens = TokenEstimator.Estimate(currentLine.ToString());
 
                 if (currentTokens + lineTokens > maxTokens && currentLine.Length > 0)
                 {
@@ -108,7 +105,6 @@ public sealed class TextChunker(ITokenEstimator tokenEstimator, IOptions<Chunkin
             return result;
         }
 
-        // If no line breaks, divide by words
         var words = paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var chunks = new List<string>();
         var currentWords = new System.Text.StringBuilder();
@@ -117,8 +113,8 @@ public sealed class TextChunker(ITokenEstimator tokenEstimator, IOptions<Chunkin
         {
             ct.ThrowIfCancellationRequested();
 
-            var wordTokens = tokenEstimator.EstimateTokens(word);
-            var currentTokens = tokenEstimator.EstimateTokens(currentWords.ToString());
+            var wordTokens = TokenEstimator.Estimate(word);
+            var currentTokens = TokenEstimator.Estimate(currentWords.ToString());
 
             if (currentTokens + wordTokens > maxTokens && currentWords.Length > 0)
             {

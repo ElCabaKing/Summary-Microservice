@@ -12,8 +12,7 @@ public sealed class KernelFactory(
 
     public Kernel Create(
         string provider,
-        string model,
-        string? apiKey = null)
+        string model)
     {
         if (!_options.Providers.TryGetValue(provider, out var config))
         {
@@ -21,7 +20,7 @@ public sealed class KernelFactory(
                 $"Provider '{provider}' not configured");
         }
 
-        var resolvedKey = apiKey ?? config.ApiKey
+        var resolvedKey = config.ApiKey
             ?? throw new InvalidOperationException(
                 $"No API key available for provider '{provider}'");
 
@@ -38,7 +37,6 @@ public sealed class KernelFactory(
                     endpoint: new Uri(config.Endpoint));
 
                 break;
-
 
             default:
                 throw new InvalidOperationException(

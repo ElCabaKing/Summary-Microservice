@@ -1,5 +1,4 @@
 using Dapper;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 using SummaryService.Application.Interfaces;
 using SummaryService.Domain.Entities;
@@ -9,15 +8,15 @@ namespace SummaryService.Infrastructure.Persistence;
 
 public sealed class ApiKeyRepository(
     IOptions<ConnectionStringsOptions> connectionStrings)
-    : IApiKeyRepository
+    : BaseRepository(connectionStrings), IApiKeyRepository
 {
-    public async Task<ApiKey?> GetByHashAsync(
-        string keyHash,
+    public async Task<IEnumerable<ApiKey>> GetByPrefixAsync(
+        string prefix,
         CancellationToken ct)
     {
-        await using var conn = new SqlConnection(connectionStrings.Value.Default);
+        await using var conn = GetConnection();
 
-        return await conn.QueryFirstOrDefaultAsync<ApiKey>(
+        return await conn.QueryAsync<ApiKey>(
             new CommandDefinition(
                 """
                 SELECT
@@ -30,10 +29,27 @@ public sealed class ApiKeyRepository(
                     CreatedAt,
                     UpdatedAt
                 FROM ApiKeys
-                WHERE KeyHash = @KeyHash
+                WHERE KeyPrefix = @Prefix
                   AND IsActive = 1
                 """,
-                new { KeyHash = keyHash },
+                new { Prefix = prefix },
+                cancellationToken: ct));
+    }
+
+    public async Task DeactivateByTenantIdAsync(
+        string tenantId,
+        CancellationToken ct)
+    {
+        await using var conn = GetConnection();
+
+        await conn.ExecuteAsync(
+            new CommandDefinition(
+                """
+                UPDATE ApiKeys
+                SET IsActive = 0, UpdatedAt = SYSUTCDATETIME()
+                WHERE TenantId = @TenantId AND IsActive = 1
+                """,
+                new { TenantId = tenantId },
                 cancellationToken: ct));
     }
 
@@ -41,7 +57,7 @@ public sealed class ApiKeyRepository(
         ApiKey apiKey,
         CancellationToken ct)
     {
-        await using var conn = new SqlConnection(connectionStrings.Value.Default);
+        await using var conn = GetConnection();
 
         await conn.ExecuteAsync(
             new CommandDefinition(

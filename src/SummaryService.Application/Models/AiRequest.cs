@@ -10,6 +10,4 @@ public sealed class AiRequest
     public float Temperature { get; init; } = 0.2f;
 
     public int? MaxTokens { get; init; }
-
-    public string? ApiKey { get; init; }
 }

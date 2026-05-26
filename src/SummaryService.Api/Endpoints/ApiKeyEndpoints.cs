@@ -8,8 +8,31 @@ public static class ApiKeyEndpoints
     public static void MapApiKeyEndpoints(this WebApplication app)
     {
         app.MapPost("/api/v1/admin/apikeys", async (
-            CreateApiKeyRequest body,
-            CreateApiKeyUseCase useCase,
+            RegisterClientRequest body,
+            RegisterClientUseCase useCase,
+            ITenantContext tenantContext,
+            CancellationToken ct) =>
+        {
+            if (tenantContext.Role != "admin")
+                return Results.Forbid();
+
+            var result = await useCase.ExecuteAsync(
+                body.CompanyName,
+                body.Email,
+                body.ContactName,
+                ct);
+
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : Results.Problem(result.Error.Message, statusCode: 400);
+        })
+        .WithName("RegisterClient")
+        .DisableAntiforgery()
+        .RequireAuthorization();
+
+        app.MapPut("/api/v1/admin/apikeys/regenerate", async (
+            RegenerateKeyRequest body,
+            RegenerateApiKeyUseCase useCase,
             ITenantContext tenantContext,
             CancellationToken ct) =>
         {
@@ -18,17 +41,21 @@ public static class ApiKeyEndpoints
 
             var result = await useCase.ExecuteAsync(
                 body.TenantId,
-                body.Role,
                 ct);
 
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : Results.Problem(result.Error.Message, statusCode: 400);
         })
-        .WithName("CreateApiKey")
+        .WithName("RegenerateApiKey")
         .DisableAntiforgery()
         .RequireAuthorization();
     }
 }
 
-public sealed record CreateApiKeyRequest(string TenantId, string Role);
+public sealed record RegisterClientRequest(
+    string CompanyName,
+    string? Email,
+    string? ContactName);
+
+public sealed record RegenerateKeyRequest(string TenantId);

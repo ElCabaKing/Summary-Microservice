@@ -1,10 +1,9 @@
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using SummaryService.Application.Interfaces;
+using SummaryService.Domain.Entities;
 
 namespace SummaryService.Api.Authentication;
 
@@ -30,17 +29,31 @@ public sealed class ApiKeyAuthHandler(
 
         using var scope = scopeFactory.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<IApiKeyRepository>();
+        var hashService = scope.ServiceProvider.GetRequiredService<IApiKeyHashService>();
 
-        var keyHash = ComputeHash(apiKey);
-        var keyEntity = await repo.GetByHashAsync(keyHash, Context.RequestAborted);
+        if (apiKey.Length < 14)
+            return AuthenticateResult.Fail("API key inválida");
 
-        if (keyEntity is null || !keyEntity.IsActive)
+        var prefix = hashService.GetPrefix(apiKey);
+        var candidates = await repo.GetByPrefixAsync(prefix, Context.RequestAborted);
+
+        ApiKey? match = null;
+        foreach (var candidate in candidates)
+        {
+            if (candidate.IsActive && hashService.VerifyKey(apiKey, candidate.KeyHash))
+            {
+                match = candidate;
+                break;
+            }
+        }
+
+        if (match is null)
             return AuthenticateResult.Fail("API key inválida o inactiva");
 
         var claims = new[]
         {
-            new Claim("tenant_id", keyEntity.TenantId),
-            new Claim(ClaimTypes.Role, keyEntity.Role),
+            new Claim("tenant_id", match.TenantId),
+            new Claim(ClaimTypes.Role, match.Role),
         };
 
         var identity = new ClaimsIdentity(claims, Scheme.Name);
@@ -48,12 +61,6 @@ public sealed class ApiKeyAuthHandler(
         var ticket = new AuthenticationTicket(principal, Scheme.Name);
 
         return AuthenticateResult.Success(ticket);
-    }
-
-    private static string ComputeHash(string raw)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(raw));
-        return Convert.ToHexStringLower(bytes);
     }
 }
 
@@ -63,3 +70,5 @@ public static class ApiKeyDefaults
 {
     public const string AuthenticationScheme = "ApiKey";
 }
+
+

@@ -10,4 +10,18 @@ public sealed class ApiKey
     public bool IsActive { get; init; }
     public DateTime CreatedAt { get; init; }
     public DateTime? UpdatedAt { get; init; }
+
+    public static ApiKey Create(string keyHash, string keyPrefix, string tenantId, string role = "user")
+    {
+        return new ApiKey
+        {
+            Id = Guid.NewGuid(),
+            KeyHash = keyHash,
+            KeyPrefix = keyPrefix,
+            TenantId = tenantId,
+            Role = role,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+    }
 }

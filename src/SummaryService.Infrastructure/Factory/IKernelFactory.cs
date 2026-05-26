@@ -5,6 +5,5 @@ public interface IKernelFactory
 {
     Kernel Create(
         string provider,
-        string model,
-        string? apiKey = null);
+        string model);
 }

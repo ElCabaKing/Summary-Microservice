@@ -8,5 +8,4 @@ public sealed class ChunkingOptions
 
     public int OverlapTokens { get; init; } = 25;
 
-    public int MaxChunks { get; init; } = 100;
 }

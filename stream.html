@@ -164,6 +164,13 @@
       padding: .4rem .75rem;
       font-size: .8rem;
       margin-top: 0;
+      border-radius: 6px;
+    }
+
+    .btn-sm.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
     }
 
     .actions {
@@ -206,13 +213,6 @@
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
 
-    .form-group textarea {
-      min-height: 80px;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: .8rem;
-      resize: vertical;
-    }
-
     .form-group input[type="range"] {
       padding: 0;
       border: none;
@@ -242,28 +242,6 @@
     .badge-tenant {
       background: #dbeafe;
       color: #1e40af;
-    }
-
-    .badge-role {
-      background: #fef3c7;
-      color: #92400e;
-    }
-
-    .badge-inactive {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .badge-active {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .badge-group {
-      display: flex;
-      gap: .5rem;
-      align-items: center;
-      margin-top: .5rem;
     }
 
     .progress-bar {
@@ -380,15 +358,6 @@
       color: #991b1b;
     }
 
-    .admin-warning {
-      text-align: center;
-      color: #92400e;
-      font-size: .85rem;
-      padding: .5rem;
-      background: #fef3c7;
-      border-radius: 6px;
-    }
-
     .tenant-info-bar {
       display: flex;
       align-items: center;
@@ -417,69 +386,43 @@
     <div class="section">
       <div class="section-header">
         <h3>🔑 API Key</h3>
-        <div>
-          <button class="btn-sm btn-outline" id="btnClearApiKey" style="display:none">🗑 Limpiar</button>
-        </div>
+        <button class="btn-sm btn-outline" id="btnClearApiKey" style="display:none">🗑 Limpiar</button>
       </div>
       <div class="form-group">
-        <input type="text" id="apiKeyInput" placeholder="sk_live_...">
+        <input type="text" id="apiKeyInput" placeholder="smm_adminadmin...">
       </div>
+      <div id="quickKeys" style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap"></div>
       <div style="display:flex;gap:.5rem;margin-top:.5rem">
-        <button class="btn-primary btn-sm" id="btnSaveApiKey" style="width:auto">Guardar API Key</button>
-        <button class="btn-success btn-sm" id="btnGenerateApiKey" style="width:auto;display:none">+ Generar API Key</button>
+        <button class="btn-primary btn-sm" id="btnSaveApiKey" style="width:auto">Guardar</button>
+        <button class="btn-outline btn-sm" id="btnRegisterToggle" style="width:auto;display:none">📋 Registrar Cliente</button>
       </div>
-      <div class="badge-group" id="keyBadges" style="display:none">
+      <div class="badge-group" id="keyBadges" style="display:none;margin-top:.5rem">
         <span class="badge badge-tenant" id="tenantBadge">Tenant: —</span>
-        <span class="badge badge-role" id="roleBadge">Role: —</span>
       </div>
     </div>
 
-    <!-- Admin Generate API Key Section (hidden by default) -->
-    <div class="section" id="genKeySection" style="display:none">
+    <!-- Register Client Section -->
+    <div class="section" id="registerSection" style="display:none">
       <div class="section-header">
-        <h3>🔐 Generar API Key para tenant</h3>
+        <h3>📋 Registrar Nuevo Cliente</h3>
       </div>
-      <div class="section-body" id="genKeyBody">
+      <div class="section-body">
         <div class="form-group" style="margin-bottom:.75rem">
-          <label for="genTenantId">Tenant ID</label>
-          <input type="text" id="genTenantId" placeholder="tenant-alpha">
+          <label for="regCompanyName">Nombre de empresa</label>
+          <input type="text" id="regCompanyName" placeholder="Mi Empresa S.A.">
         </div>
-        <div class="form-group">
-          <label for="genRole">Rol</label>
-          <select id="genRole">
-            <option value="user">user</option>
-            <option value="admin">admin</option>
-          </select>
+        <div class="form-row" style="margin-bottom:.75rem">
+          <div class="form-group">
+            <label for="regEmail">Email</label>
+            <input type="text" id="regEmail" placeholder="admin@empresa.com">
+          </div>
+          <div class="form-group">
+            <label for="regContactName">Contacto</label>
+            <input type="text" id="regContactName" placeholder="Juan Pérez">
+          </div>
         </div>
-        <button class="btn-success" id="btnCreateApiKey" style="margin-top:.75rem">Generar</button>
-        <div class="result-msg" id="genKeyResult"></div>
-      </div>
-    </div>
-
-    <!-- Admin Provider Section -->
-    <div class="section" id="adminSection" style="display:none">
-      <div class="section-header" id="adminToggle">
-        <h3>⚙️ Configurar Provider (admin)</h3>
-        <span id="adminArrow">▶</span>
-      </div>
-      <div class="section-body hidden" id="adminBody">
-        <div class="form-group" style="margin-bottom:.75rem">
-          <label for="adminTenantId">Tenant ID</label>
-          <input type="text" id="adminTenantId" placeholder="tenant-alpha">
-        </div>
-        <div class="form-group">
-          <label for="adminProvider">Provider</label>
-          <select id="adminProvider">
-            <option value="groq">Groq</option>
-            <option value="gemini">Gemini</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin-top:.75rem">
-          <label for="adminApiKey">API Key del provider</label>
-          <input type="password" id="adminApiKey" placeholder="gsk_...">
-        </div>
-        <button class="btn-success" id="btnSaveConfig">Guardar Configuración</button>
-        <div class="result-msg" id="adminResult"></div>
+        <button class="btn-success" id="btnRegisterClient">Registrar y Generar API Key</button>
+        <div class="result-msg" id="regResult"></div>
       </div>
     </div>
 
@@ -544,9 +487,11 @@
   </div>
 
   <script>
+    const ADMIN_API_KEY = 'smm_adminadmin8c0013772288e07a80a60b5775e2304840376e93038336325feb5c79af0e67c7';
     const BASE_API_URL = 'http://localhost:5171/api/v1';
     const STREAM_API_URL = BASE_API_URL + '/summaries/stream';
-    const ADMIN_API_URL = BASE_API_URL + '/admin/tenants';
+    const REGISTER_API_URL = BASE_API_URL + '/admin/apikeys';
+    const REGENERATE_API_URL = BASE_API_URL + '/admin/apikeys/regenerate';
 
     // Configuración de providers y modelos
     const PROVIDERS_CONFIG = {
@@ -574,27 +519,18 @@
     const apiKeyInput = document.getElementById('apiKeyInput');
     const btnSaveApiKey = document.getElementById('btnSaveApiKey');
     const btnClearApiKey = document.getElementById('btnClearApiKey');
-    const btnGenerateApiKey = document.getElementById('btnGenerateApiKey');
+    const btnRegisterToggle = document.getElementById('btnRegisterToggle');
+    const quickKeys = document.getElementById('quickKeys');
     const keyBadges = document.getElementById('keyBadges');
     const tenantBadge = document.getElementById('tenantBadge');
-    const roleBadge = document.getElementById('roleBadge');
     const activeTenantDisplay = document.getElementById('activeTenantDisplay');
 
-    const genKeySection = document.getElementById('genKeySection');
-    const genTenantId = document.getElementById('genTenantId');
-    const genRole = document.getElementById('genRole');
-    const btnCreateApiKey = document.getElementById('btnCreateApiKey');
-    const genKeyResult = document.getElementById('genKeyResult');
-
-    const adminSection = document.getElementById('adminSection');
-    const adminToggle = document.getElementById('adminToggle');
-    const adminArrow = document.getElementById('adminArrow');
-    const adminBody = document.getElementById('adminBody');
-    const adminTenantId = document.getElementById('adminTenantId');
-    const adminProvider = document.getElementById('adminProvider');
-    const adminApiKey = document.getElementById('adminApiKey');
-    const btnSaveConfig = document.getElementById('btnSaveConfig');
-    const adminResult = document.getElementById('adminResult');
+    const registerSection = document.getElementById('registerSection');
+    const regCompanyName = document.getElementById('regCompanyName');
+    const regEmail = document.getElementById('regEmail');
+    const regContactName = document.getElementById('regContactName');
+    const btnRegisterClient = document.getElementById('btnRegisterClient');
+    const regResult = document.getElementById('regResult');
 
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
@@ -615,92 +551,149 @@
 
     let selectedFile = null;
     let abortController = null;
-    let apiKeyToken = null;
+    let activeKey = null;
 
-    // ── API Key helpers ──
+    // ── LocalStorage helpers ──
 
-    function decodeApiKeyPrefix(prefix) {
-      // The key format is sk_live_<64hex> 
-      // We can't decode claims from the key itself (it's opaque/hashed)
-      // Claims come from the server response on auth
-      return null;
+    function getStoredKeys() {
+      try {
+        return JSON.parse(localStorage.getItem('apiKeys') || '{}');
+      } catch {
+        return {};
+      }
+    }
+
+    function setStoredKeys(keys) {
+      localStorage.setItem('apiKeys', JSON.stringify(keys));
+    }
+
+    function getActiveKey() {
+      return localStorage.getItem('activeKey') || null;
+    }
+
+    function setActiveKey(key) {
+      localStorage.setItem('activeKey', key || '');
+    }
+
+    function addStoredKey(label, key) {
+      const keys = getStoredKeys();
+      keys[label] = key;
+      setStoredKeys(keys);
     }
 
     // ── UI updates ──
 
     function updateUI() {
-      const token = localStorage.getItem('apiKey');
-      apiKeyToken = token || null;
-      apiKeyInput.value = token || '';
+      const stored = getStoredKeys();
+      const savedActive = getActiveKey();
+      activeKey = savedActive || ADMIN_API_KEY;
 
-      if (!token) {
-        keyBadges.style.display = 'none';
-        btnClearApiKey.style.display = 'none';
-        btnGenerateApiKey.style.display = 'none';
-        genKeySection.style.display = 'none';
-        adminSection.style.display = 'none';
-        activeTenantDisplay.textContent = '—';
-        btnSend.disabled = true;
-        return;
+      // Ensure admin key is always stored
+      if (!stored['admin']) {
+        stored['admin'] = ADMIN_API_KEY;
+        setStoredKeys(stored);
       }
 
-      // Try to decode prefix for display (just show first 16 chars)
-      const preview = token.length > 16 ? token.substring(0, 16) + '...' : token;
-      tenantBadge.textContent = `Key: ${preview}`;
-      roleBadge.textContent = 'Role: ?';
+      apiKeyInput.value = activeKey;
 
-      keyBadges.style.display = 'flex';
-      btnClearApiKey.style.display = 'inline-block';
-      btnGenerateApiKey.style.display = 'inline-block';
-      activeTenantDisplay.textContent = 'Autenticado';
-      btnSend.disabled = !selectedFile;
+      // Rebuild quick-select buttons
+      quickKeys.innerHTML = '';
+      Object.entries(stored).forEach(([label, key]) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-sm btn-outline';
+        if (key === activeKey) btn.classList.add('active');
+        btn.textContent = label;
+        btn.title = key;
+        btn.addEventListener('click', () => {
+          activeKey = key;
+          setActiveKey(key);
+          apiKeyInput.value = key;
+          updateUI();
+          addLog('info', `API Key cambiada a: ${label}`);
+        });
+        quickKeys.appendChild(btn);
+      });
+
+      // Show clear button if key is set
+      btnClearApiKey.style.display = activeKey ? 'inline-block' : 'none';
+
+      // Show register toggle only if admin key is active
+      const isAdmin = activeKey === ADMIN_API_KEY;
+      btnRegisterToggle.style.display = isAdmin ? 'inline-block' : 'none';
+
+      // Badge
+      const prefix = activeKey ? activeKey.substring(0, 14) + '...' : '—';
+      tenantBadge.textContent = `Key: ${prefix}`;
+      keyBadges.style.display = activeKey ? 'flex' : 'none';
+
+      // Tenant display
+      const label = Object.entries(stored).find(([, k]) => k === activeKey)?.[0];
+      activeTenantDisplay.textContent = label || 'Autenticado';
+
+      btnSend.disabled = !selectedFile || !activeKey;
     }
 
     function saveApiKey() {
       const token = apiKeyInput.value.trim();
       if (!token) return;
 
-      if (!token.startsWith('sk_live_')) {
-        addLog('info', 'La API Key debería empezar con sk_live_');
-      }
+      const label = prompt('Nombre para esta API Key (ej: admin, tenant_1):', 'custom');
+      if (!label) return;
 
-      localStorage.setItem('apiKey', token);
-      addLog('info', 'API Key guardada');
+      addStoredKey(label, token);
+      activeKey = token;
+      setActiveKey(token);
+      addLog('info', `API Key guardada como "${label}"`);
       updateUI();
     }
 
     function clearApiKey() {
-      localStorage.removeItem('apiKey');
-      apiKeyToken = null;
-      apiKeyInput.value = '';
-      addLog('info', 'API Key eliminada');
+      const stored = getStoredKeys();
+      const label = Object.entries(stored).find(([, k]) => k === activeKey)?.[0];
+      if (label && label !== 'admin') {
+        delete stored[label];
+        setStoredKeys(stored);
+        addLog('info', `API Key "${label}" eliminada`);
+      }
+      activeKey = ADMIN_API_KEY;
+      setActiveKey(ADMIN_API_KEY);
+      apiKeyInput.value = ADMIN_API_KEY;
       updateUI();
     }
 
-    // ── Generate API Key ──
+    // ── Register Toggle ──
 
-    btnCreateApiKey.addEventListener('click', async () => {
-      const tenantId = genTenantId.value.trim();
-      const role = genRole.value;
+    btnRegisterToggle.addEventListener('click', () => {
+      const shown = registerSection.style.display !== 'none';
+      registerSection.style.display = shown ? 'none' : 'block';
+    });
 
-      if (!tenantId) {
-        genKeyResult.className = 'result-msg error';
-        genKeyResult.textContent = 'Completá el Tenant ID';
-        genKeyResult.style.display = 'block';
+    // ── Register Client ──
+
+    btnRegisterClient.addEventListener('click', async () => {
+      const companyName = regCompanyName.value.trim();
+      if (!companyName) {
+        regResult.className = 'result-msg error';
+        regResult.textContent = 'Completá el nombre de la empresa';
+        regResult.style.display = 'block';
         return;
       }
 
-      btnCreateApiKey.disabled = true;
-      btnCreateApiKey.textContent = 'Generando...';
+      btnRegisterClient.disabled = true;
+      btnRegisterClient.textContent = 'Registrando...';
 
       try {
-        const res = await fetch(`${BASE_API_URL}/admin/apikeys`, {
+        const res = await fetch(REGISTER_API_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKeyToken}`
+            'Authorization': `Bearer ${activeKey}`
           },
-          body: JSON.stringify({ tenantId, role })
+          body: JSON.stringify({
+            companyName,
+            email: regEmail.value.trim() || null,
+            contactName: regContactName.value.trim() || null
+          })
         });
 
         if (!res.ok) {
@@ -709,75 +702,32 @@
         }
 
         const data = await res.json();
-        genKeyResult.className = 'result-msg success';
-        genKeyResult.textContent = `✓ API Key generada: ${data.apiKey}`;
-        genKeyResult.style.display = 'block';
-        addLog('info', `API Key generada para tenant ${data.tenantId}, role ${data.role}`);
+        regResult.className = 'result-msg success';
+        regResult.textContent = `✓ Cliente "${data.companyName}" registrado. Tenant: ${data.tenantId}`;
+        regResult.style.display = 'block';
+
+        // Add new key to stored keys
+        addStoredKey(data.tenantId, data.apiKey);
+        addLog('info', `Nuevo cliente registrado: ${data.tenantId}`);
+        updateUI();
+
+        // Show generated key in a copy-friendly way
+        const keyNotice = document.createElement('div');
+        keyNotice.style.cssText = 'margin-top:.5rem;padding:.5rem;background:#f0fdf4;border-radius:6px;font-size:.8rem;word-break:break-all';
+        keyNotice.innerHTML = `<strong>API Key generada (una sola vez):</strong><br><code style="font-size:.75rem">${data.apiKey}</code>`;
+        regResult.appendChild(keyNotice);
+
+        regCompanyName.value = '';
+        regEmail.value = '';
+        regContactName.value = '';
       } catch (err) {
-        genKeyResult.className = 'result-msg error';
-        genKeyResult.textContent = `Error: ${err.message}`;
-        genKeyResult.style.display = 'block';
+        regResult.className = 'result-msg error';
+        regResult.textContent = `Error: ${err.message}`;
+        regResult.style.display = 'block';
       } finally {
-        btnCreateApiKey.disabled = false;
-        btnCreateApiKey.textContent = 'Generar';
+        btnRegisterClient.disabled = false;
+        btnRegisterClient.textContent = 'Registrar y Generar API Key';
       }
-    });
-
-    // ── Admin ──
-
-    btnSaveConfig.addEventListener('click', async () => {
-      const tenantId = adminTenantId.value.trim();
-      const provider = adminProvider.value;
-      const apiKey = adminApiKey.value.trim();
-
-      if (!tenantId || !apiKey) {
-        adminResult.className = 'result-msg error';
-        adminResult.textContent = 'Completá todos los campos';
-        adminResult.style.display = 'block';
-        return;
-      }
-
-      btnSaveConfig.disabled = true;
-      btnSaveConfig.textContent = 'Guardando...';
-
-      try {
-        const res = await fetch(`${ADMIN_API_URL}/${encodeURIComponent(tenantId)}/providers`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKeyToken}`
-          },
-          body: JSON.stringify({ provider, apiKey })
-        });
-
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`HTTP ${res.status}: ${text}`);
-        }
-
-        adminResult.className = 'result-msg success';
-        adminResult.textContent = `✓ Provider configurado exitosamente para tenant "${tenantId}"`;
-        adminResult.style.display = 'block';
-        adminApiKey.value = '';
-        addLog('info', `Provider ${provider} configurado para tenant ${tenantId}`);
-      } catch (err) {
-        adminResult.className = 'result-msg error';
-        adminResult.textContent = `Error: ${err.message}`;
-        adminResult.style.display = 'block';
-      } finally {
-        btnSaveConfig.disabled = false;
-        btnSaveConfig.textContent = 'Guardar Configuración';
-      }
-    });
-
-    // ── Admin collapsible ──
-
-    let adminExpanded = false;
-
-    adminToggle.addEventListener('click', () => {
-      adminExpanded = !adminExpanded;
-      adminBody.classList.toggle('hidden', !adminExpanded);
-      adminArrow.textContent = adminExpanded ? '▼' : '▶';
     });
 
     // ── Summarizer ──
@@ -804,8 +754,7 @@
       const hasFile = selectedFile !== null;
       dropZone.classList.toggle('has-file', hasFile);
       fileName.textContent = hasFile ? selectedFile.name : '';
-      const hasKey = !!apiKeyToken;
-      btnSend.disabled = !hasFile || !hasKey;
+      btnSend.disabled = !hasFile || !activeKey;
     }
 
     dropZone.addEventListener('click', () => fileInput.click());
@@ -861,7 +810,7 @@
     });
 
     btnSend.addEventListener('click', async () => {
-      if (!selectedFile || !apiKeyToken) return;
+      if (!selectedFile || !activeKey) return;
 
       summaryOutput.classList.remove('visible');
       summaryContent.textContent = '';
@@ -893,7 +842,7 @@
         const response = await fetch(STREAM_API_URL, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${apiKeyToken}`
+            'Authorization': `Bearer ${activeKey}`
           },
           body: formData,
           signal: abortController.signal,
@@ -998,10 +947,6 @@
     });
 
     btnClearApiKey.addEventListener('click', clearApiKey);
-
-    btnGenerateApiKey.addEventListener('click', () => {
-      genKeySection.style.display = genKeySection.style.display === 'none' ? 'block' : 'none';
-    });
 
     // ── Init ──
 

@@ -1,11 +1,9 @@
-using FluentValidation;
 using Serilog;
 using SummaryService.Api.Authentication;
 using SummaryService.Api.Endpoints;
 using SummaryService.Api.Middleware;
 using SummaryService.Application.Interfaces;
 using SummaryService.Application.UseCases;
-using SummaryService.Application.Validators;
 using SummaryService.Domain.Options;
 using SummaryService.Infrastructure.Chunking;
 using SummaryService.Infrastructure.Encryption;
@@ -22,10 +20,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
 
-var aesKey = Environment.GetEnvironmentVariable("AES_KEY");
-if (!string.IsNullOrEmpty(aesKey))
+var groqApiKey = Environment.GetEnvironmentVariable("GROQ_API_KEY");
+if (!string.IsNullOrEmpty(groqApiKey))
 {
-    builder.Configuration["Aes:Key"] = aesKey;
+    builder.Configuration["AI:Providers:groq:ApiKey"] = groqApiKey;
+}
+
+var geminiApiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+if (!string.IsNullOrEmpty(geminiApiKey))
+{
+    builder.Configuration["AI:Providers:gemini:ApiKey"] = geminiApiKey;
 }
 
 var sqlConnectionString = Environment.GetEnvironmentVariable("SQL_CONNECTION_STRING");
@@ -53,11 +57,6 @@ builder.Services
 builder.Services.AddAuthorization();
 
 //
-// Validators
-//
-builder.Services.AddValidatorsFromAssemblyContaining<SummaryRequestValidator>();
-
-//
 // PDF
 //
 builder.Services.AddScoped<IDocumentParser, DocumentParser>();
@@ -68,12 +67,6 @@ builder.Services.AddScoped<IPdfOcrExtractor, PdfOcrExtractor>();
 // Chunking
 //
 builder.Services.AddScoped<ITextChunker, TextChunker>();
-builder.Services.AddScoped<ITokenEstimator, TokenEstimator>();
-
-//
-// Prompting
-//
-builder.Services.AddScoped<IPromptProvider, PromptProvider>();
 
 //
 // AI / LLM
@@ -89,15 +82,6 @@ builder.Services.AddSingleton<IKernelFactory, KernelFactory>();
 builder.Services.Configure<ChunkingOptions>(
     builder.Configuration.GetSection(ChunkingOptions.SectionName));
 
-builder.Services.Configure<SummaryOptions>(
-    builder.Configuration.GetSection(SummaryOptions.SectionName));
-
-builder.Services.Configure<OcrOptions>(
-    builder.Configuration.GetSection(OcrOptions.SectionName));
-
-builder.Services.Configure<AesOptions>(
-    builder.Configuration.GetSection(AesOptions.SectionName));
-
 builder.Services.Configure<ConnectionStringsOptions>(
     builder.Configuration.GetSection(ConnectionStringsOptions.SectionName));
 
@@ -105,14 +89,12 @@ builder.Services.Configure<ConnectionStringsOptions>(
 // Multi-tenant
 //
 builder.Services.AddScoped<ITenantContext, HttpTenantContext>();
-builder.Services.AddScoped<ITenantProviderRepository, TenantProviderRepository>();
 builder.Services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
-builder.Services.AddScoped<IAesEncryptionService, AesEncryptionService>();
+builder.Services.AddScoped<IClientRepository, ClientRepository>();
+builder.Services.AddScoped<IApiKeyHashService, ApiKeyHashService>();
 
 builder.Services.AddScoped<IStreamingTextGenerator,
     SemanticKernelStreamingTextGenerator>();
-
-builder.Services.AddScoped<ISummaryGenerator, SummaryGenerator>();
 
 //
 // SSE
@@ -125,8 +107,8 @@ builder.Services.AddScoped<ISseStreamWriter, SseStreamWriter>();
 // Use Cases
 //
 builder.Services.AddScoped<SummarizeDocumentUseCase>();
-builder.Services.AddScoped<ConfigureTenantProviderUseCase>();
-builder.Services.AddScoped<CreateApiKeyUseCase>();
+builder.Services.AddScoped<RegisterClientUseCase>();
+builder.Services.AddScoped<RegenerateApiKeyUseCase>();
 
 //
 // Swagger
@@ -176,7 +158,6 @@ if (app.Environment.IsDevelopment())
 // Endpoints
 //
 app.MapSummaryEndpoints();
-app.MapAdminEndpoints();
 app.MapApiKeyEndpoints();
 
 try

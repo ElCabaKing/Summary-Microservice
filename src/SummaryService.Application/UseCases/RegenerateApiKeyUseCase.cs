@@ -16,20 +16,20 @@ public sealed class RegenerateApiKeyUseCase(
     {
         try
         {
-            var client = await clientRepository.GetByTenantIdAsync(tenantId, ct);
+            var client = await clientRepository.GetByTenantIdAsync(tenantId, ct).ConfigureAwait(false);
 
             if (client is null)
                 return Result<ClientKeyResult>.Failure(
                     new Error("CLIENT_NOT_FOUND", $"No client found with tenantId '{tenantId}'"));
 
-            await apiKeyRepository.DeactivateByTenantIdAsync(tenantId, ct);
+            await apiKeyRepository.DeactivateByTenantIdAsync(tenantId, ct).ConfigureAwait(false);
 
             var plainKey = hashService.GenerateApiKey();
             var keyHash = hashService.ComputeHash(plainKey);
 
             var newApiKey = ApiKey.Create(keyHash, tenantId);
 
-            await apiKeyRepository.CreateAsync(newApiKey, ct);
+            await apiKeyRepository.CreateAsync(newApiKey, ct).ConfigureAwait(false);
 
             return Result<ClientKeyResult>.Success(new ClientKeyResult
             {

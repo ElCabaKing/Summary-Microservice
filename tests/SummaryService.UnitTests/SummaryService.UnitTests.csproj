@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SummaryService.Application\SummaryService.Application.csproj" />
     <ProjectReference Include="..\..\src\SummaryService.Domain\SummaryService.Domain.csproj" />
+    <ProjectReference Include="..\..\src\SummaryService.Infrastructure\SummaryService.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\SummaryService.Shared\SummaryService.Shared.csproj" />
   </ItemGroup>
 

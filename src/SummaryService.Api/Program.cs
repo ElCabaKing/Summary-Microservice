@@ -9,12 +9,11 @@ using SummaryService.Application.UseCases;
 using SummaryService.Domain.Options;
 using SummaryService.Infrastructure.Chunking;
 using SummaryService.Infrastructure.Encryption;
-using SummaryService.Infrastructure.Factory;
 using SummaryService.Infrastructure.Llm;
-using SummaryService.Infrastructure.Llm.Options;
 using SummaryService.Infrastructure.Pdf;
 using SummaryService.Infrastructure.Persistence;
 using SummaryService.Infrastructure.Cors;
+using SummaryService.Infrastructure.Factory;
 using SummaryService.Infrastructure.Sse;
 
 DotNetEnv.Env.TraversePath().Load();
@@ -123,6 +122,7 @@ builder.Services.AddSwaggerGen();
 //
 // CORS
 //
+builder.Services.AddMemoryCache();
 builder.Services.AddCors(options => { });
 builder.Services.AddSingleton<ICorsPolicyProvider, DynamicCorsPolicyProvider>();
 

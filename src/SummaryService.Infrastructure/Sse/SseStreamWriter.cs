@@ -31,8 +31,8 @@ public sealed class SseStreamWriter(IHttpContextAccessor httpContextAccessor) : 
 
     private async Task WriteEventAsync(string type, string data, CancellationToken ct)
     {
-        await Response.WriteAsync($"event: {type}\n", ct);
-        await Response.WriteAsync($"data: {data}\n\n", ct);
-        await Response.Body.FlushAsync(ct);
+        await Response.WriteAsync($"event: {type}\n", ct).ConfigureAwait(false);
+        await Response.WriteAsync($"data: {data}\n\n", ct).ConfigureAwait(false);
+        await Response.Body.FlushAsync(ct).ConfigureAwait(false);
     }
 }

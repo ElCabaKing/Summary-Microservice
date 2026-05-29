@@ -15,7 +15,7 @@ public sealed class DocumentParser(
         if (contentType == "text/plain")
         {
             using var reader = new StreamReader(document, leaveOpen: true);
-            return await reader.ReadToEndAsync(ct);
+            return await reader.ReadToEndAsync(ct).ConfigureAwait(false);
         }
 
         if (contentType != "application/pdf")
@@ -23,13 +23,13 @@ public sealed class DocumentParser(
 
         logger.LogInformation("Parsing PDF document");
 
-        var text = await pdfTextExtractor.ExtractTextAsync(document, ct);
+        var text = await pdfTextExtractor.ExtractTextAsync(document, ct).ConfigureAwait(false);
 
         if (string.IsNullOrWhiteSpace(text) || text.Length < 50)
         {
             logger.LogInformation("Native PDF text insufficient ({Length} chars), falling back to OCR", text?.Length ?? 0);
             document.Position = 0;
-            text = await pdfOcrExtractor.ExtractTextWithOcrAsync(document, ct);
+            text = await pdfOcrExtractor.ExtractTextWithOcrAsync(document, ct).ConfigureAwait(false);
         }
 
         return NormalizeText(text);

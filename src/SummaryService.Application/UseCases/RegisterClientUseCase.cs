@@ -19,7 +19,7 @@ public sealed class RegisterClientUseCase(
     {
         try
         {
-            var maxNumber = await clientRepository.GetMaxTenantNumberAsync(ct);
+            var maxNumber = await clientRepository.GetMaxTenantNumberAsync(ct).ConfigureAwait(false);
             var nextNumber = (maxNumber ?? 0) + 1;
             var tenantId = $"tenant_{nextNumber}";
 
@@ -40,8 +40,8 @@ public sealed class RegisterClientUseCase(
 
             var apiKey = ApiKey.Create(keyHash, tenantId);
 
-            await clientRepository.CreateAsync(client, ct);
-            await apiKeyRepository.CreateAsync(apiKey, ct);
+            await clientRepository.CreateAsync(client, ct).ConfigureAwait(false);
+            await apiKeyRepository.CreateAsync(apiKey, ct).ConfigureAwait(false);
 
             return Result<ClientKeyResult>.Success(new ClientKeyResult
             {

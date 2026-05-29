@@ -1,4 +1,4 @@
-
+using System.Text.Json;
 using SummaryService.Application.Models;
 using SummaryService.Application.UseCases;
 
@@ -131,8 +131,9 @@ public static class SummaryEndpoints
         string message,
         CancellationToken ct)
     {
+        var payload = JsonSerializer.Serialize(new { error = message });
         await context.Response.WriteAsync(
-            $"event: error\ndata: {{\"error\":\"{message}\"}}\n\n",
+            $"event: error\ndata: {payload}\n\n",
             ct);
     }
 }

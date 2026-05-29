@@ -1,6 +1,6 @@
 using Microsoft.SemanticKernel;
 
-namespace SummaryService.Infrastructure.Factory;
+namespace SummaryService.Application.Interfaces;
 public interface IKernelFactory
 {
     Kernel Create(

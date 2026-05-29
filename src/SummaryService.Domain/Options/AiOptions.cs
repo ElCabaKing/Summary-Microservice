@@ -1,4 +1,4 @@
-namespace SummaryService.Infrastructure.Llm.Options;
+namespace SummaryService.Domain.Options;
 
 public sealed class AiOptions
 {
@@ -11,9 +11,6 @@ public sealed class AiOptions
 
 public sealed class AiProviderOptions
 {
-    /// <summary>
-    /// OpenAI, OpenAICompatible, Ollama, etc.
-    /// </summary>
     public string Type { get; set; } = string.Empty;
 
     public string Endpoint { get; set; } = string.Empty;

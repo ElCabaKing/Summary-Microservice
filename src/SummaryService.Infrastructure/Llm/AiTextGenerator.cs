@@ -4,7 +4,6 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using SummaryService.Application.Interfaces;
 using SummaryService.Application.Models;
-using SummaryService.Infrastructure.Factory;
 
 namespace SummaryService.Infrastructure.Llm;
 

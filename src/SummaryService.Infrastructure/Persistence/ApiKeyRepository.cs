@@ -32,7 +32,7 @@ public sealed class ApiKeyRepository(
                   AND IsActive = 1
                 """,
                 new { TenantId = tenantId },
-                cancellationToken: ct));
+                cancellationToken: ct)).ConfigureAwait(false);
     }
 
     public async Task DeactivateByTenantIdAsync(
@@ -49,7 +49,7 @@ public sealed class ApiKeyRepository(
                 WHERE TenantId = @TenantId AND IsActive = 1
                 """,
                 new { TenantId = tenantId },
-                cancellationToken: ct));
+                cancellationToken: ct)).ConfigureAwait(false);
     }
 
     public async Task CreateAsync(
@@ -73,6 +73,6 @@ public sealed class ApiKeyRepository(
                     apiKey.IsActive,
                     apiKey.CreatedAt
                 },
-                cancellationToken: ct));
+                cancellationToken: ct)).ConfigureAwait(false);
     }
 }

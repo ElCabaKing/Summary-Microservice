@@ -23,26 +23,26 @@ public sealed class SummarizeDocumentUseCase(
             var tenantId = tenantContext.TenantId;
 
             if (string.IsNullOrWhiteSpace(tenantId))
-                return await FailWithSseError("NO_TENANT", "No se encontró tenant_id en el token", ct);
+                return await FailWithSseError("NO_TENANT", "No se encontró tenant_id en el token", ct).ConfigureAwait(false);
 
-            await sseWriter.WriteStatusAsync("extracting_text", ct);
+            await sseWriter.WriteStatusAsync("extracting_text", ct).ConfigureAwait(false);
 
             var text = await documentParser.ParseAsync(
                 request.Document,
                 request.ContentType,
-                ct);
+                ct).ConfigureAwait(false);
 
             if (string.IsNullOrWhiteSpace(text))
-                return await FailWithSseError("NO_TEXT", "No text could be extracted from the document", ct);
+                return await FailWithSseError("NO_TEXT", "No text could be extracted from the document", ct).ConfigureAwait(false);
 
-            await sseWriter.WriteStatusAsync("chunking_document", ct);
+            await sseWriter.WriteStatusAsync("chunking_document", ct).ConfigureAwait(false);
 
             var chunks = textChunker.Chunk(text, ct);
 
             if (chunks.Count == 0)
-                return await FailWithSseError("EMPTY_DOCUMENT", "Document is empty after chunking", ct);
+                return await FailWithSseError("EMPTY_DOCUMENT", "Document is empty after chunking", ct).ConfigureAwait(false);
 
-            await sseWriter.WriteStatusAsync("generating_summary", ct);
+            await sseWriter.WriteStatusAsync("generating_summary", ct).ConfigureAwait(false);
 
             var chunkSummaries = new List<string>();
 
@@ -54,7 +54,7 @@ public sealed class SummarizeDocumentUseCase(
                 var chunkNumber = i + 1;
 
                 await sseWriter.WriteStatusAsync(
-                    $"summarizing_chunk_{chunkNumber}_of_{chunks.Count}", ct);
+                    $"summarizing_chunk_{chunkNumber}_of_{chunks.Count}", ct).ConfigureAwait(false);
 
                 var aiRequest = BuildAiRequest(
                     request,
@@ -62,13 +62,13 @@ public sealed class SummarizeDocumentUseCase(
 
                 var chunkSummaryBuilder = new StringBuilder();
 
-                await foreach (var token in textGenerator.GenerateStreamAsync(aiRequest, ct))
+                await foreach (var token in textGenerator.GenerateStreamAsync(aiRequest, ct).ConfigureAwait(false))
                 {
                     if (string.IsNullOrWhiteSpace(token))
                         continue;
 
                     chunkSummaryBuilder.Append(token);
-                    await sseWriter.WriteChunkAsync(token, ct);
+                    await sseWriter.WriteChunkAsync(token, ct).ConfigureAwait(false);
                 }
 
                 var chunkSummary = chunkSummaryBuilder.ToString().Trim();
@@ -78,8 +78,8 @@ public sealed class SummarizeDocumentUseCase(
 
                 if (i < chunks.Count - 1)
                 {
-                    await sseWriter.WriteChunkAsync("\n\n---\n\n", ct);
-                    await Task.Delay(3000, ct);
+                    await sseWriter.WriteChunkAsync("\n\n---\n\n", ct).ConfigureAwait(false);
+                    await Task.Delay(3000, ct).ConfigureAwait(false);
                 }
             }
 
@@ -87,7 +87,7 @@ public sealed class SummarizeDocumentUseCase(
 
             if (chunkSummaries.Count > 1)
             {
-                await sseWriter.WriteStatusAsync("reducing_summary", ct);
+                await sseWriter.WriteStatusAsync("reducing_summary", ct).ConfigureAwait(false);
 
                 finalSummary = await ReduceSummariesAsync(
                     request,
@@ -99,19 +99,19 @@ public sealed class SummarizeDocumentUseCase(
                 finalSummary = chunkSummaries.FirstOrDefault() ?? string.Empty;
 
                 if (!string.IsNullOrWhiteSpace(finalSummary))
-                    await sseWriter.WriteChunkAsync(finalSummary, ct);
+                    await sseWriter.WriteChunkAsync(finalSummary, ct).ConfigureAwait(false);
             }
 
-            await sseWriter.WriteCompletedAsync(finalSummary, ct);
+            await sseWriter.WriteCompletedAsync(finalSummary, ct).ConfigureAwait(false);
             return Result.Success();
         }
         catch (OperationCanceledException)
         {
-            return await FailWithSseError("CANCELLED", "Request was cancelled", ct);
+            return await FailWithSseError("CANCELLED", "Request was cancelled", ct).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            return await FailWithSseError("INTERNAL_ERROR", ex.Message, ct);
+            return await FailWithSseError("INTERNAL_ERROR", ex.Message, ct).ConfigureAwait(false);
         }
     }
 
@@ -131,13 +131,13 @@ public sealed class SummarizeDocumentUseCase(
             var reduceRequest = BuildAiRequest(request, reducePrompt);
             var finalSummaryBuilder = new StringBuilder();
 
-            await foreach (var token in textGenerator.GenerateStreamAsync(reduceRequest, ct))
+            await foreach (var token in textGenerator.GenerateStreamAsync(reduceRequest, ct).ConfigureAwait(false))
             {
                 if (string.IsNullOrWhiteSpace(token))
                     continue;
 
                 finalSummaryBuilder.Append(token);
-                await sseWriter.WriteChunkAsync(token, ct);
+                await sseWriter.WriteChunkAsync(token, ct).ConfigureAwait(false);
             }
 
             return finalSummaryBuilder.ToString().Trim();
@@ -156,7 +156,7 @@ public sealed class SummarizeDocumentUseCase(
             var groupRequest = BuildAiRequest(request, groupPrompt);
             var groupSummaryBuilder = new StringBuilder();
 
-            await foreach (var token in textGenerator.GenerateStreamAsync(groupRequest, ct))
+            await foreach (var token in textGenerator.GenerateStreamAsync(groupRequest, ct).ConfigureAwait(false))
             {
                 if (string.IsNullOrWhiteSpace(token))
                     continue;
@@ -169,7 +169,7 @@ public sealed class SummarizeDocumentUseCase(
             if (!string.IsNullOrWhiteSpace(groupSummary))
                 reducedGroups.Add(groupSummary);
 
-            await Task.Delay(1500, ct);
+            await Task.Delay(1500, ct).ConfigureAwait(false);
         }
 
         if (reducedGroups.Count > 1)
@@ -192,7 +192,7 @@ public sealed class SummarizeDocumentUseCase(
 
     private async Task<Result> FailWithSseError(string code, string message, CancellationToken ct)
     {
-        await sseWriter.WriteErrorAsync(message, ct);
+        await sseWriter.WriteErrorAsync(message, ct).ConfigureAwait(false);
         return Result.Failure(new Error(code, message));
     }
 }

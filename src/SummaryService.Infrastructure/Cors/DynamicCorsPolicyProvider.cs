@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using SummaryService.Application.Interfaces;
 
 namespace SummaryService.Infrastructure.Cors;
 
 public sealed class DynamicCorsPolicyProvider(
-    IServiceScopeFactory scopeFactory) : ICorsPolicyProvider
+    IServiceScopeFactory scopeFactory,
+    ILogger<DynamicCorsPolicyProvider> logger) : ICorsPolicyProvider
 {
     public async Task<CorsPolicy?> GetPolicyAsync(
         HttpContext context,
@@ -36,8 +38,9 @@ public sealed class DynamicCorsPolicyProvider(
 
             return builder.Build();
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to load CORS policy from database, falling back to permissive policy");
             return new CorsPolicyBuilder()
                 .AllowAnyHeader()
                 .AllowAnyMethod()

@@ -177,7 +177,7 @@ BEGIN
         NEWID(),
         'System Admin',
         'admin',
-        'localhost',
+        'http://127.0.0.1:5500',
         1,
         SYSUTCDATETIME()
     );
@@ -203,7 +203,7 @@ BEGIN
     )
     VALUES (
         NEWID(),
-        '019aaeb814ef9c76956ad56a7455b4b0d25f53885341a261a01453c36dbbdb6c',
+        'dcca10361a8dc11e81d111f5fb3cfca3cbe862dcb7ef3eb97d73c826e58d9233',
         'admin',
         'admin',
         1,

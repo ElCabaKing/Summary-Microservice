@@ -1,3 +1,5 @@
+using FluentValidation;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Serilog;
 using SummaryService.Api.Authentication;
 using SummaryService.Api.Endpoints;
@@ -12,6 +14,7 @@ using SummaryService.Infrastructure.Llm;
 using SummaryService.Infrastructure.Llm.Options;
 using SummaryService.Infrastructure.Pdf;
 using SummaryService.Infrastructure.Persistence;
+using SummaryService.Infrastructure.Cors;
 using SummaryService.Infrastructure.Sse;
 
 DotNetEnv.Env.TraversePath().Load();
@@ -120,15 +123,14 @@ builder.Services.AddSwaggerGen();
 //
 // CORS
 //
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.AllowAnyOrigin()
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-    });
-});
+builder.Services.AddCors(options => { });
+builder.Services.AddSingleton<ICorsPolicyProvider, DynamicCorsPolicyProvider>();
+
+//
+// Validation
+//
+builder.Services.AddValidatorsFromAssemblyContaining<
+    SummaryService.Api.Validators.RegisterClientRequestValidator>();
 
 var app = builder.Build();
 
@@ -139,7 +141,26 @@ app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseSerilogRequestLogging();
 
-app.UseCors();
+app.Use(async (ctx, next) =>
+{
+    var corsService = ctx.RequestServices.GetRequiredService<ICorsService>();
+    var policyProvider = ctx.RequestServices.GetRequiredService<ICorsPolicyProvider>();
+    var policy = await policyProvider.GetPolicyAsync(ctx, null);
+
+    if (policy is not null)
+    {
+        var result = corsService.EvaluatePolicy(ctx, policy);
+        corsService.ApplyResult(result, ctx.Response);
+
+        if (HttpMethods.IsOptions(ctx.Request.Method))
+        {
+            ctx.Response.StatusCode = 200;
+            return;
+        }
+    }
+
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

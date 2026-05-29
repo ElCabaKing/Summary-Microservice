@@ -14,6 +14,7 @@ public sealed class RegisterClientUseCase(
         string companyName,
         string? email,
         string? contactName,
+        string domain,
         CancellationToken ct)
     {
         try
@@ -29,14 +30,15 @@ public sealed class RegisterClientUseCase(
                 Email = email,
                 ContactName = contactName,
                 TenantId = tenantId,
+                Domain = domain,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
 
-            var plainKey = hashService.GenerateApiKey(out var prefix);
+            var plainKey = hashService.GenerateApiKey();
             var keyHash = hashService.ComputeHash(plainKey);
 
-            var apiKey = ApiKey.Create(keyHash, prefix, tenantId);
+            var apiKey = ApiKey.Create(keyHash, tenantId);
 
             await clientRepository.CreateAsync(client, ct);
             await apiKeyRepository.CreateAsync(apiKey, ct);

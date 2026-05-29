@@ -4,7 +4,7 @@ namespace SummaryService.Application.Interfaces;
 
 public interface IApiKeyRepository
 {
-    Task<IEnumerable<ApiKey>> GetByPrefixAsync(string prefix, CancellationToken ct);
+    Task<IEnumerable<ApiKey>> GetByTenantIdAsync(string tenantId, CancellationToken ct);
 
     Task CreateAsync(ApiKey apiKey, CancellationToken ct);
 

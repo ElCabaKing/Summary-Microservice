@@ -389,7 +389,7 @@
         <button class="btn-sm btn-outline" id="btnClearApiKey" style="display:none">🗑 Limpiar</button>
       </div>
       <div class="form-group">
-        <input type="text" id="apiKeyInput" placeholder="smm_adminadmin...">
+        <input type="text" id="apiKeyInput" placeholder="smm_e04ec294..." value="smm_e04ec29491bbafab1f9b79ed7a9474925da34e084d327296cf8cbb2977bf3a84">
       </div>
       <div id="quickKeys" style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap"></div>
       <div style="display:flex;gap:.5rem;margin-top:.5rem">
@@ -420,6 +420,10 @@
             <label for="regContactName">Contacto</label>
             <input type="text" id="regContactName" placeholder="Juan Pérez">
           </div>
+        </div>
+        <div class="form-group" style="margin-bottom:.75rem">
+          <label for="regDomain">Dominio (URL completa, ej: http://localhost:5500)</label>
+          <input type="text" id="regDomain" placeholder="http://localhost:5500" value="http://localhost:5500">
         </div>
         <button class="btn-success" id="btnRegisterClient">Registrar y Generar API Key</button>
         <div class="result-msg" id="regResult"></div>
@@ -487,7 +491,7 @@
   </div>
 
   <script>
-    const ADMIN_API_KEY = 'smm_adminadmin8c0013772288e07a80a60b5775e2304840376e93038336325feb5c79af0e67c7';
+    const ADMIN_API_KEY = 'smm_e04ec29491bbafab1f9b79ed7a9474925da34e084d327296cf8cbb2977bf3a84';
     const BASE_API_URL = 'http://localhost:5171/api/v1';
     const STREAM_API_URL = BASE_API_URL + '/summaries/stream';
     const REGISTER_API_URL = BASE_API_URL + '/admin/apikeys';
@@ -529,6 +533,7 @@
     const regCompanyName = document.getElementById('regCompanyName');
     const regEmail = document.getElementById('regEmail');
     const regContactName = document.getElementById('regContactName');
+    const regDomain = document.getElementById('regDomain');
     const btnRegisterClient = document.getElementById('btnRegisterClient');
     const regResult = document.getElementById('regResult');
 
@@ -672,9 +677,18 @@
 
     btnRegisterClient.addEventListener('click', async () => {
       const companyName = regCompanyName.value.trim();
+      const domain = regDomain.value.trim();
+
       if (!companyName) {
         regResult.className = 'result-msg error';
         regResult.textContent = 'Completá el nombre de la empresa';
+        regResult.style.display = 'block';
+        return;
+      }
+
+      if (!domain) {
+        regResult.className = 'result-msg error';
+        regResult.textContent = 'Completá el dominio del cliente (URL completa)';
         regResult.style.display = 'block';
         return;
       }
@@ -692,7 +706,8 @@
           body: JSON.stringify({
             companyName,
             email: regEmail.value.trim() || null,
-            contactName: regContactName.value.trim() || null
+            contactName: regContactName.value.trim() || null,
+            domain
           })
         });
 
@@ -720,6 +735,7 @@
         regCompanyName.value = '';
         regEmail.value = '';
         regContactName.value = '';
+        regDomain.value = '';
       } catch (err) {
         regResult.className = 'result-msg error';
         regResult.textContent = `Error: ${err.message}`;

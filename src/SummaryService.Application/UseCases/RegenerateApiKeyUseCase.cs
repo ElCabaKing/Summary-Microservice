@@ -24,10 +24,10 @@ public sealed class RegenerateApiKeyUseCase(
 
             await apiKeyRepository.DeactivateByTenantIdAsync(tenantId, ct);
 
-            var plainKey = hashService.GenerateApiKey(out var prefix);
+            var plainKey = hashService.GenerateApiKey();
             var keyHash = hashService.ComputeHash(plainKey);
 
-            var newApiKey = ApiKey.Create(keyHash, prefix, tenantId);
+            var newApiKey = ApiKey.Create(keyHash, tenantId);
 
             await apiKeyRepository.CreateAsync(newApiKey, ct);
 

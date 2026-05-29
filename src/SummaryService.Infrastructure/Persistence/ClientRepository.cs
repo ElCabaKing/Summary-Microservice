@@ -25,6 +25,7 @@ public sealed class ClientRepository(
                     Email,
                     ContactName,
                     TenantId,
+                    Domain,
                     IsActive,
                     CreatedAt,
                     UpdatedAt
@@ -44,8 +45,8 @@ public sealed class ClientRepository(
         await conn.ExecuteAsync(
             new CommandDefinition(
                 """
-                INSERT INTO Clients (Id, CompanyName, Email, ContactName, TenantId, IsActive, CreatedAt)
-                VALUES (@Id, @CompanyName, @Email, @ContactName, @TenantId, @IsActive, @CreatedAt)
+                INSERT INTO Clients (Id, CompanyName, Email, ContactName, TenantId, Domain, IsActive, CreatedAt)
+                VALUES (@Id, @CompanyName, @Email, @ContactName, @TenantId, @Domain, @IsActive, @CreatedAt)
                 """,
                 new
                 {
@@ -54,6 +55,7 @@ public sealed class ClientRepository(
                     client.Email,
                     client.ContactName,
                     client.TenantId,
+                    client.Domain,
                     client.IsActive,
                     client.CreatedAt
                 },
@@ -71,5 +73,48 @@ public sealed class ClientRepository(
                 FROM Clients
                 """,
                 cancellationToken: ct));
+    }
+
+    public async Task<Client?> GetByDomainAsync(
+        string domain,
+        CancellationToken ct)
+    {
+        await using var conn = GetConnection();
+
+        return await conn.QueryFirstOrDefaultAsync<Client>(
+            new CommandDefinition(
+                """
+                SELECT
+                    Id,
+                    CompanyName,
+                    Email,
+                    ContactName,
+                    TenantId,
+                    Domain,
+                    IsActive,
+                    CreatedAt,
+                    UpdatedAt
+                FROM Clients
+                WHERE Domain = @Domain
+                  AND IsActive = 1
+                """,
+                new { Domain = domain },
+                cancellationToken: ct));
+    }
+
+    public async Task<List<string>> GetAllDomainsAsync(CancellationToken ct)
+    {
+        await using var conn = GetConnection();
+
+        var domains = await conn.QueryAsync<string>(
+            new CommandDefinition(
+                """
+                SELECT Domain
+                FROM Clients
+                WHERE IsActive = 1
+                """,
+                cancellationToken: ct));
+
+        return domains.AsList();
     }
 }

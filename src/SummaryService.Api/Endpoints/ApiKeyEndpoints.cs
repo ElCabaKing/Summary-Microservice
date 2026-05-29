@@ -20,6 +20,7 @@ public static class ApiKeyEndpoints
                 body.CompanyName,
                 body.Email,
                 body.ContactName,
+                body.Domain,
                 ct);
 
             return result.IsSuccess
@@ -56,6 +57,7 @@ public static class ApiKeyEndpoints
 public sealed record RegisterClientRequest(
     string CompanyName,
     string? Email,
-    string? ContactName);
+    string? ContactName,
+    string Domain);
 
 public sealed record RegenerateKeyRequest(string TenantId);

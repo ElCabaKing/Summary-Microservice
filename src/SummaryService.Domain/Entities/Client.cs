@@ -7,6 +7,7 @@ public sealed class Client
     public string? Email { get; init; }
     public string? ContactName { get; init; }
     public string TenantId { get; init; } = string.Empty;
+    public string Domain { get; init; } = string.Empty;
     public bool IsActive { get; init; }
     public DateTime CreatedAt { get; init; }
     public DateTime? UpdatedAt { get; init; }

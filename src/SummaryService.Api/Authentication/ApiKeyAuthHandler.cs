@@ -3,7 +3,6 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using SummaryService.Application.Interfaces;
-using SummaryService.Domain.Entities;
 
 namespace SummaryService.Api.Authentication;
 
@@ -27,17 +26,26 @@ public sealed class ApiKeyAuthHandler(
         if (string.IsNullOrWhiteSpace(apiKey))
             return AuthenticateResult.NoResult();
 
+        if (!Request.Headers.TryGetValue("Origin", out var originHeader))
+            return AuthenticateResult.Fail("Origin header requerido");
+
+        var origin = originHeader.ToString();
+        if (string.IsNullOrWhiteSpace(origin))
+            return AuthenticateResult.Fail("Origin header inválido");
+
         using var scope = scopeFactory.CreateScope();
-        var repo = scope.ServiceProvider.GetRequiredService<IApiKeyRepository>();
+        var clientRepo = scope.ServiceProvider.GetRequiredService<IClientRepository>();
+        var apiKeyRepo = scope.ServiceProvider.GetRequiredService<IApiKeyRepository>();
         var hashService = scope.ServiceProvider.GetRequiredService<IApiKeyHashService>();
 
-        if (apiKey.Length < 14)
-            return AuthenticateResult.Fail("API key inválida");
+        var client = await clientRepo.GetByDomainAsync(origin, Context.RequestAborted);
 
-        var prefix = hashService.GetPrefix(apiKey);
-        var candidates = await repo.GetByPrefixAsync(prefix, Context.RequestAborted);
+        if (client is null)
+            return AuthenticateResult.Fail("Cliente no encontrado para el dominio");
 
-        ApiKey? match = null;
+        var candidates = await apiKeyRepo.GetByTenantIdAsync(client.TenantId, Context.RequestAborted);
+
+        Domain.Entities.ApiKey? match = null;
         foreach (var candidate in candidates)
         {
             if (candidate.IsActive && hashService.VerifyKey(apiKey, candidate.KeyHash))

@@ -10,8 +10,8 @@ public sealed class ApiKeyRepository(
     IOptions<ConnectionStringsOptions> connectionStrings)
     : BaseRepository(connectionStrings), IApiKeyRepository
 {
-    public async Task<IEnumerable<ApiKey>> GetByPrefixAsync(
-        string prefix,
+    public async Task<IEnumerable<ApiKey>> GetByTenantIdAsync(
+        string tenantId,
         CancellationToken ct)
     {
         await using var conn = GetConnection();
@@ -22,17 +22,16 @@ public sealed class ApiKeyRepository(
                 SELECT
                     Id,
                     KeyHash,
-                    KeyPrefix,
                     TenantId,
                     Role,
                     IsActive,
                     CreatedAt,
                     UpdatedAt
                 FROM ApiKeys
-                WHERE KeyPrefix = @Prefix
+                WHERE TenantId = @TenantId
                   AND IsActive = 1
                 """,
-                new { Prefix = prefix },
+                new { TenantId = tenantId },
                 cancellationToken: ct));
     }
 
@@ -62,14 +61,13 @@ public sealed class ApiKeyRepository(
         await conn.ExecuteAsync(
             new CommandDefinition(
                 """
-                INSERT INTO ApiKeys (Id, KeyHash, KeyPrefix, TenantId, Role, IsActive, CreatedAt)
-                VALUES (@Id, @KeyHash, @KeyPrefix, @TenantId, @Role, @IsActive, @CreatedAt)
+                INSERT INTO ApiKeys (Id, KeyHash, TenantId, Role, IsActive, CreatedAt)
+                VALUES (@Id, @KeyHash, @TenantId, @Role, @IsActive, @CreatedAt)
                 """,
                 new
                 {
                     apiKey.Id,
                     apiKey.KeyHash,
-                    apiKey.KeyPrefix,
                     apiKey.TenantId,
                     apiKey.Role,
                     apiKey.IsActive,
